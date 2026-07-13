@@ -1,4 +1,4 @@
-﻿# 测试策略与质量门禁
+# 测试策略与质量门禁
 
 更新时间：2026-07-13
 
@@ -17,13 +17,17 @@
 ```bash
 npm run verify
 npm run test:e2e
+npm run audit:dependencies
 ```
 
 `npm run verify` 必须依次通过：
 
+- 仓库敏感文件检查；
+- 依赖版本、来源和完整性策略检查；
 - 后端 self-test；
 - 前端 self-test；
 - 后端安全测试；
+- 工作簿安全与 XLSX/XLS/CSV 兼容测试；
 - 后端 TypeScript 构建；
 - 前端 TypeScript + Vite 构建。
 
@@ -49,3 +53,14 @@ npm run test:e2e
 - 大型报告或 CI Artifact 链接。
 
 测试失败时禁止把状态改为 `done`。
+
+
+## 工作簿安全标准
+
+- 只允许 XLSX、XLS、CSV，文件上限 5 MB；
+- XLSX/XLS 必须通过文件签名与扩展名一致性检查；
+- 客户导入最多 2000 行，题库最多 500 行；默认最多 128 列、单元格最多 32767 字符；
+- 拒绝 `__proto__`、`prototype`、`constructor` 危险表头；
+- 解析结果必须使用无原型对象；
+- 依赖锁必须固定已批准版本、官方来源和 SHA-512 完整性；
+- CI 必须执行 High/Critical 依赖审计；High/Critical 不为 0 时禁止合并。

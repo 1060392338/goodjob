@@ -68,3 +68,38 @@
 ### 下一循环
 
 替换 `xlsx` 高危依赖，保持导入导出兼容并增加恶意工作簿与资源限制测试。
+
+## 2026-07-13 — Loop L-0003：工作簿依赖与不可信文件安全边界
+
+### 目标
+
+消除 `xlsx@0.18.5` 的 Prototype Pollution 和 ReDoS High 漏洞，同时保持客户、题库、提成和搜客工作簿流程兼容。
+
+### 方案
+
+- 新增 ADR-0004，选择 SheetJS 官方已修复 `0.20.3` 发布包，而不是继续使用 npm Registry 的旧版本。
+- 本阶段不切换 ExcelJS，因为当前系统仍声明支持旧版 `.xls` 导入，立即切换会造成兼容回归。
+- 新增统一 `frontend/src/workbook.ts`，业务代码不再直接调用 SheetJS。
+
+### 已完成
+
+- 依赖升级到 SheetJS 官方 CDN `xlsx-0.20.3.tgz`，锁文件记录 SHA-512 完整性。
+- 工作簿读取统一执行扩展名、5 MB 文件大小、文件签名、行数、128 列和 32767 字符限制。
+- 拒绝 `__proto__`、`prototype`、`constructor` 表头，读取行使用无原型对象。
+- 迁移客户导入/导出、客户模板、题库导入/导出、提成导出和搜客结果导出。
+- 增加 XLSX、XLS、CSV 兼容测试，危险表头、伪造扩展名、损坏文件、超限行列和长单元格测试。
+- 增加 UI 级恶意 CSV 拒绝测试，确认危险客户不会写入业务数据。
+- 增加离线依赖版本/来源/完整性门禁，并在 GitHub Actions 增加 High 依赖审计。
+
+### 验证
+
+- `npm run audit:dependencies`：PASS，0 vulnerabilities。
+- `npm run test:dependency-policy`：PASS，锁定 `xlsx@0.20.3` 官方来源和完整性。
+- `npm run test:workbook-security`：PASS，XLSX/XLS/CSV 与安全限制全部通过。
+- `npm run verify`：PASS。
+- `npm run test:e2e`：PASS，37/37。
+- 前端构建：PASS；主包约 1.394 MB，拆包风险继续由 R-008 跟踪。
+
+### 结果
+
+`REQ-GJ-SEC-002 / TASK-GJ-0004` 的验收条件全部满足，R-010 关闭。下一循环进入架构模块边界拆分准备。

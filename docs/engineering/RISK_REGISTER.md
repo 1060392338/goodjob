@@ -11,8 +11,8 @@
 | R-005 | MySQL Store 具有原型阶段全量持久化特征，扩展性与数据竞争风险高 | High | Open | 设计正式迁移与按表/按行增量持久化；恢复演练 | 阶段 2 |
 | R-006 | AI/网页采集可能造成敏感数据泄漏、提示注入或不合规采集 | Critical | Open | Gateway 脱敏、来源白名单、恶意内容隔离、审计、人工确认 | 阶段 1/3/4 |
 | R-007 | WhatsApp/Twilio/Puppeteer 等依赖安装包含大型浏览器下载，影响 CI 可重复性 | Medium | Open | CI 跳过非必要 Puppeteer 下载；WhatsApp 独立可选运行时 | 阶段 2 |
-| R-008 | 前端单包约 1.3 MB，首屏和维护性存在风险 | Medium | Open | 建立性能基线并按模块动态拆包 | 阶段 2/7 |
+| R-008 | 前端主包约 1.394 MB，首屏和维护性存在风险 | Medium | Open | 建立性能基线并按模块动态拆包；工作簿能力后续评估按需加载 | 阶段 2/7 |
 | R-009 | 尚未配置目标 GitHub 远端和保护规则 | High | Blocked | 获得仓库地址/权限后迁移并验证 Git 历史、Actions 和保护规则 | 阶段 0 |
-| R-010 | `xlsx` 存在 Prototype Pollution 与 ReDoS High 漏洞，npm 当前无修复版本 | High | Open | 使用维护中的工作簿库替换生产路径；增加恶意文件、资源限制和兼容回归测试 | 阶段 0 |
+| R-010 | npm Registry 的 `xlsx@0.18.5` 存在 Prototype Pollution 与 ReDoS High 漏洞 | High | Closed | 已升级到 SheetJS 官方 `0.20.3`、锁定完整性、集中安全解析并增加恶意输入/兼容测试；依赖审计为 0 | 阶段 0 |
 
 任何 Critical 风险在关闭或正式签署接受前不得发布内部正式版。

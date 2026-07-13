@@ -1,4 +1,4 @@
-﻿name: Quality Gates
+name: Quality Gates
 
 on:
   pull_request:
@@ -22,6 +22,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run audit:dependencies
       - run: npm run verify
 
   e2e:

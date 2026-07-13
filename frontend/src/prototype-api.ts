@@ -1,7 +1,7 @@
 type Role = "sales" | "manager" | "admin" | "super_admin";
 type DashboardPeriod = "today" | "week" | "month";
 
-import * as XLSX from "xlsx";
+import { downloadWorkbook, readWorkbookRows } from "./workbook";
 import * as echarts from "echarts/core";
 import { LineChart } from "echarts/charts";
 import { GridComponent, TooltipComponent } from "echarts/components";
@@ -5282,14 +5282,18 @@ async function exportCommission() {
   };
   const toChineseRows = (rows: Record<string, unknown>[], columns: readonly (readonly [string, string])[]) =>
     rows.map((row) => Object.fromEntries(columns.map(([key, label]) => [label, translateExportValue(key, row[key])])));
-  const detailSheet = XLSX.utils.json_to_sheet(toChineseRows(result.rows, detailColumns));
-  const summarySheet = XLSX.utils.json_to_sheet(toChineseRows(result.summaryRows, summaryColumns));
-  detailSheet["!cols"] = detailColumns.map(([, label]) => ({ wch: Math.max(label.length * 2 + 2, 12) }));
-  summarySheet["!cols"] = summaryColumns.map(([, label]) => ({ wch: Math.max(label.length * 2 + 2, 12) }));
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, summarySheet, "人员月度汇总");
-  XLSX.utils.book_append_sheet(workbook, detailSheet, "逐笔计提明细");
-  XLSX.writeFile(workbook, `GoodJob-提成对账-${state.commissionMonth}.xlsx`);
+  downloadWorkbook(`GoodJob-提成对账-${state.commissionMonth}.xlsx`, [
+    {
+      name: "人员月度汇总",
+      rows: toChineseRows(result.summaryRows, summaryColumns),
+      columnWidths: summaryColumns.map(([, label]) => Math.max(label.length * 2 + 2, 12))
+    },
+    {
+      name: "逐笔计提明细",
+      rows: toChineseRows(result.rows, detailColumns),
+      columnWidths: detailColumns.map(([, label]) => Math.max(label.length * 2 + 2, 12))
+    }
+  ]);
   toast(`已导出 ${result.exportJob.rows} 行提成对账数据`);
 }
 
@@ -6867,26 +6871,8 @@ function parseBooleanCell(value: unknown) {
   return ["true", "1", "yes", "y", "是", "已绑定", "绑定"].includes(text);
 }
 
-const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_IMPORT_EXTENSIONS = new Set(["xlsx", "xls", "csv"]);
-
-function assertImportFile(file: File) {
-  const extension = file.name.split(".").pop()?.toLowerCase() || "";
-  if (!ALLOWED_IMPORT_EXTENSIONS.has(extension)) {
-    throw new Error("仅支持 XLSX、XLS 或 CSV 文件");
-  }
-  if (file.size > MAX_IMPORT_FILE_BYTES) {
-    throw new Error("导入文件不能超过 5 MB");
-  }
-}
-
 async function parseCustomerImportFile(file: File): Promise<CustomerImportRow[]> {
-  assertImportFile(file);
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: "array", dense: true, sheetRows: 2002 });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-  if (rows.length > 2000) throw new Error("客户导入单次最多支持 2000 行");
+  const rows = await readWorkbookRows(file, { maxDataRows: 2000 });
   return rows.map((row) => {
     const company = String(rowValue(row, ["公司名", "客户", "客户名称", "公司", "客户公司", "company", "Company"])).trim();
     return {
@@ -6955,10 +6941,7 @@ async function exportCustomers() {
       下一提醒: customer.nextReminder,
       企微绑定: customer.wecomBound ? "已绑定" : "未绑定"
     }));
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "客户清单");
-    XLSX.writeFile(workbook, `GoodJob客户清单-${Date.now()}.xlsx`);
+    downloadWorkbook(`GoodJob客户清单-${Date.now()}.xlsx`, [{ name: "客户清单", rows }]);
     state.jobs.unshift(result.job);
     renderJobs(state.jobs);
     toast(`客户已导出：${rows.length} 行`);
@@ -6968,10 +6951,10 @@ async function exportCustomers() {
 }
 
 function downloadCustomerTemplate() {
-  const worksheet = XLSX.utils.aoa_to_sheet([["公司名", "国家", "联系人", "阶段", "预计金额", "健康度", "下一提醒", "企微绑定"]]);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "客户导入模板");
-  XLSX.writeFile(workbook, "GoodJob客户导入模板.xlsx");
+  downloadWorkbook("GoodJob客户导入模板.xlsx", [{
+    name: "客户导入模板",
+    headers: ["公司名", "国家", "联系人", "阶段", "预计金额", "健康度", "下一提醒", "企微绑定"]
+  }]);
   toast("客户导入模板已下载");
 }
 
@@ -7745,12 +7728,7 @@ function rowValue(row: Record<string, unknown>, keys: string[]) {
 }
 
 async function parseQuestionFile(file: File): Promise<ExamImportQuestion[]> {
-  assertImportFile(file);
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: "array", dense: true, sheetRows: 502 });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-  if (rows.length > 500) throw new Error("题库导入单次最多支持 500 行");
+  const rows = await readWorkbookRows(file, { maxDataRows: 500 });
   return rows.map((row) => {
     const options = [
       rowValue(row, ["选项A", "选项 A", "A", "optionA", "Option A"]),
@@ -7824,10 +7802,7 @@ async function exportQuestionBank() {
       难度: question.difficulty === "hard" ? "高阶" : question.difficulty === "easy" ? "基础" : "应用",
       解析: question.explanation
     }));
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "基础题库");
-    XLSX.writeFile(workbook, `GoodJob基础题库-${Date.now()}.xlsx`);
+    downloadWorkbook(`GoodJob基础题库-${Date.now()}.xlsx`, [{ name: "基础题库", rows }]);
     toast(`题库已导出：${rows.length} 道题`);
   } catch (error) {
     toast(error instanceof Error ? error.message : "题库导出失败", "error");
@@ -9883,7 +9858,7 @@ function exportLeadFinderRows() {
     toast("暂无搜客结果可导出", "error");
     return;
   }
-  const worksheet = XLSX.utils.json_to_sheet(source.map((item) => ({
+  const rowsToExport = source.map((item) => ({
     "公司名": item.company,
     "业务": item.business,
     "国家": item.country,
@@ -9893,10 +9868,8 @@ function exportLeadFinderRows() {
     "说明": item.description,
     "评分": "status" in item ? leadFinderScore(item as WebsiteOpportunity) : "",
     "状态": "status" in item ? ((item as WebsiteOpportunity).status === "synced" ? "已同步" : "待确认") : "待确认"
-  })));
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "智能搜客结果");
-  XLSX.writeFile(workbook, `GoodJob智能搜客结果-${Date.now()}.xlsx`);
+  }));
+  downloadWorkbook(`GoodJob智能搜客结果-${Date.now()}.xlsx`, [{ name: "智能搜客结果", rows: rowsToExport }]);
   toast("搜客结果已导出");
 }
 

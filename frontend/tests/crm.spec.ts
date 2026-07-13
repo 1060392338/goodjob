@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import * as XLSX from "xlsx";
+import { createWorkbookBytes } from "../src/workbook.js";
 import { readFile } from "node:fs/promises";
 
 async function loginWithCredentials(page: import("@playwright/test").Page, email: string, password: string, expectedName: string) {
@@ -65,38 +65,38 @@ async function apiFromPage<T>(
 }
 
 function buildQuestionWorkbookBuffer() {
-  const worksheet = XLSX.utils.json_to_sheet([
-    {
-      "题干": "Excel导入定制产品：客户询价时第一步确认什么？",
-      "类目": "产品知识",
-      "选项A": "规格、数量、认证、交期和使用场景",
-      "选项B": "客户名片颜色",
-      "选项C": "包装偏好",
-      "正确答案": "A",
-      "解析": "产品报价必须先确认关键需求参数。",
-      "难度": "基础"
-    },
-    {
-      "题干": "Excel导入防爆产品：需要优先确认什么？",
-      "类目": "产品知识",
-      "选项A": "防爆等级、认证体系和使用区域",
-      "选项B": "是否需要彩盒",
-      "选项C": "客户头像",
-      "选项D": "安装区域危险等级",
-      "正确答案": "A,D",
-      "解析": "防爆类产品必须确认认证和使用区域。",
-      "难度": "高阶",
-      "题型": "多选"
-    }
-  ]);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "题库");
-  return Buffer.from(XLSX.write(workbook, { bookType: "xlsx", type: "buffer" }));
+  return Buffer.from(createWorkbookBytes([{
+    name: "题库",
+    rows: [
+      {
+        "题干": "Excel导入定制产品：客户询价时第一步确认什么？",
+        "类目": "产品知识",
+        "选项A": "规格、数量、认证、交期和使用场景",
+        "选项B": "客户名片颜色",
+        "选项C": "包装偏好",
+        "正确答案": "A",
+        "解析": "产品报价必须先确认关键需求参数。",
+        "难度": "基础"
+      },
+      {
+        "题干": "Excel导入防爆产品：需要优先确认什么？",
+        "类目": "产品知识",
+        "选项A": "防爆等级、认证体系和使用区域",
+        "选项B": "是否需要彩盒",
+        "选项C": "客户头像",
+        "选项D": "安装区域危险等级",
+        "正确答案": "A,D",
+        "解析": "防爆类产品必须确认认证和使用区域。",
+        "难度": "高阶",
+        "题型": "多选"
+      }
+    ]
+  }]));
 }
-
 function buildCustomerWorkbookBuffer(company: string) {
-  const worksheet = XLSX.utils.json_to_sheet([
-    {
+  return Buffer.from(createWorkbookBytes([{
+    name: "客户导入",
+    rows: [{
       "公司名": company,
       "国家": "德国",
       "联系人": "Import Buyer",
@@ -105,13 +105,9 @@ function buildCustomerWorkbookBuffer(company: string) {
       "健康度": 74,
       "下一提醒": "明天 11:00",
       "企微绑定": "已绑定"
-    }
-  ]);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "客户导入");
-  return Buffer.from(XLSX.write(workbook, { bookType: "xlsx", type: "buffer" }));
+    }]
+  }]));
 }
-
 test.describe("GoodJob CRM prototype pages", () => {
   let runId: string;
 
@@ -1155,6 +1151,19 @@ test.describe("GoodJob CRM prototype pages", () => {
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toContain("GoodJob客户清单");
     await expect(page.locator("#imports tbody")).toContainText("客户清单导出");
+  });
+
+  test("customer workbook import rejects prototype-polluting headers", async ({ page }) => {
+    await openView(page, "imports");
+    await page.locator("#customerImportInput").setInputFiles({
+      name: "dangerous-customers.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from("__proto__,公司名\npolluted,Unsafe Trading\n", "utf8")
+    });
+    await page.locator("#runCustomerImportButton").click();
+    await expect(page.locator(".toast").last()).toContainText("不安全表头");
+    const customers = await apiFromPage<{ customers: Array<{ company: string }> }>(page, "/api/customers");
+    expect(customers.customers.some((customer) => customer.company === "Unsafe Trading")).toBe(false);
   });
 
   test("reminders mobile view keeps the action queue readable and touchable", async ({ page }) => {
