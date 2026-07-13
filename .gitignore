@@ -1,0 +1,45 @@
+﻿# Dependencies
+node_modules/
+
+# Build output
+dist/
+backend/dist/
+frontend/dist/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime data
+*.log
+logs/
+tmp/
+temp/
+.whatsapp_auth/
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local databases and exports
+*.sqlite
+*.sqlite3
+*.db
+exports/
+uploads/
+
+# TypeScript incremental cache
+*.tsbuildinfo

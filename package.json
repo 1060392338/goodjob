@@ -7,13 +7,16 @@
     "dev:mysql": "concurrently \"npm run dev:mysql --workspace backend\" \"npm run dev --workspace frontend\"",
     "build": "npm run build --workspace backend && npm run build --workspace frontend",
     "test": "npm run test --workspace backend && npm run test --workspace frontend",
-    "test:e2e": "npm run test:e2e --workspace frontend"
+    "test:e2e": "npm run test:e2e --workspace frontend",
+    "test:security": "npm run test:security --workspace backend",
+    "verify": "npm run test && npm run test:security && npm run build"
   },
   "workspaces": [
     "backend",
     "frontend"
   ],
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0"
   }
 }

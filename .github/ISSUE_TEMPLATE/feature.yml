@@ -1,0 +1,35 @@
+﻿name: 功能需求
+description: 建立具备验收和追踪关系的功能任务
+title: "[REQ-GJ-XXX] "
+labels: ["type:feature", "status:backlog"]
+body:
+  - type: textarea
+    id: value
+    attributes:
+      label: 业务价值与用户
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 范围与非范围
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准（Given/When/Then）
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: API、数据、权限、安全与外部依赖影响
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: 测试与证据计划
+    validations:
+      required: true

@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-13",
+  "project": "GoodJob AI 外贸获客跟踪系统",
+  "currentIteration": "L-0001",
+  "allowedStatuses": [
+    "backlog",
+    "ready",
+    "in_progress",
+    "blocked",
+    "verification",
+    "done"
+  ],
+  "items": [
+    {
+      "id": "REQ-GJ-ENG-001",
+      "task": "TASK-GJ-0001",
+      "title": "建立可持续工程 Harness 与 Loop Engineering 闭环",
+      "phase": 0,
+      "status": "done",
+      "priority": "P0",
+      "acceptance": [
+        "存在供人类与 Agent 使用的开发协作契约",
+        "功能、风险、追踪、实施日志和交接文档可持续更新",
+        "存在统一验证命令和 GitHub 质量门禁",
+        "Windows 与 Linux 环境变量脚本兼容"
+      ],
+      "tests": [
+        "npm run verify",
+        "npm run test:e2e"
+      ],
+      "evidence": [
+        "docs/engineering/evidence/L-0001-baseline.md"
+      ],
+      "completedAt": "2026-07-13",
+      "verification": {
+        "verify": "PASS: backend self-test, frontend self-test, security test, backend build, frontend build",
+        "e2e": "PASS: 36/36 Playwright tests",
+        "evidence": [
+          "docs/engineering/evidence/L-0001-baseline.md"
+        ]
+      }
+    },
+    {
+      "id": "REQ-GJ-SEC-001",
+      "task": "TASK-GJ-0002",
+      "title": "处置默认账号、仓库密钥与敏感文件风险",
+      "phase": 0,
+      "status": "ready",
+      "priority": "P0",
+      "acceptance": [
+        "当前分支不包含真实账号或密钥",
+        "所有已暴露测试/默认凭证有轮换或禁用记录",
+        "CI 具备密钥扫描门禁",
+        "示例配置只包含不可用占位值"
+      ],
+      "tests": [
+        "secret scan",
+        "npm run test:security"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "REQ-GJ-ARCH-001",
+      "task": "TASK-GJ-0003",
+      "title": "拆分后端超大路由文件并建立模块边界",
+      "phase": 2,
+      "status": "backlog",
+      "priority": "P0",
+      "acceptance": [
+        "认证、客户、线索、AI、集成路由按模块装配",
+        "现有 API 契约和权限行为不回归",
+        "模块具备独立单元与集成测试入口"
+      ],
+      "tests": [
+        "API regression",
+        "npm run test",
+        "npm run test:security"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "REQ-GJ-AI-001",
+      "task": "TASK-GJ-0101",
+      "title": "OpenAI-compatible Model Gateway",
+      "phase": 4,
+      "status": "backlog",
+      "priority": "P0",
+      "acceptance": [
+        "业务代码不绑定具体模型厂商",
+        "支持结构化输出、超时、重试、用量、Trace ID 与错误分类",
+        "凭证仅在服务端读取且日志脱敏",
+        "Mock Gateway 契约测试通过"
+      ],
+      "tests": [
+        "gateway unit",
+        "gateway contract",
+        "failure injection"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "REQ-GJ-LEAD-001",
+      "task": "TASK-GJ-0201",
+      "title": "统一 LeadSourceConnector 与数据血缘",
+      "phase": 3,
+      "status": "backlog",
+      "priority": "P0",
+      "acceptance": [
+        "CSV/Excel、网页/搜索、第三方 API 使用统一标准化管道",
+        "每条线索保留来源、任务、时间、证据与转换版本",
+        "连接器支持分页、限流、重试、检查点和幂等"
+      ],
+      "tests": [
+        "connector contract",
+        "idempotency",
+        "resume from checkpoint"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "REQ-GJ-AI-LEAD-001",
+      "task": "TASK-GJ-0301",
+      "title": "AI 线索清洗、补全、去重与 ICP 评分",
+      "phase": 4,
+      "status": "backlog",
+      "priority": "P0",
+      "acceptance": [
+        "AI 结果包含来源、置信度、模型与 Prompt 版本",
+        "结构化输出失败不污染业务数据",
+        "人工可采纳、驳回和重跑",
+        "金标评测达到测试策略阈值"
+      ],
+      "tests": [
+        "golden dataset eval",
+        "prompt injection",
+        "fallback"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "REQ-GJ-AI-ASSIST-001",
+      "task": "TASK-GJ-0401",
+      "title": "全局 AI 助手与确认执行协议",
+      "phase": 5,
+      "status": "backlog",
+      "priority": "P0",
+      "acceptance": [
+        "AI 查询严格服从现有 RBAC 和数据范围",
+        "写操作必须预览并由用户确认",
+        "重复确认不产生重复写入",
+        "全部工具调用可审计"
+      ],
+      "tests": [
+        "permission matrix",
+        "unconfirmed write=0",
+        "idempotency",
+        "audit completeness"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "REQ-GJ-COLLAB-001",
+      "task": "TASK-GJ-0501",
+      "title": "钉钉、企业微信、飞书统一适配入口",
+      "phase": 6,
+      "status": "backlog",
+      "priority": "P1",
+      "acceptance": [
+        "三平台 Mock Adapter 通过同一契约测试",
+        "支持身份、消息、待办、审批、通讯录和 Webhook 标准接口",
+        "平台未配置时不发起外部请求",
+        "替换 Adapter 不修改 CRM 领域逻辑"
+      ],
+      "tests": [
+        "adapter contract",
+        "webhook signature",
+        "replay protection",
+        "idempotency"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "REQ-GJ-SEC-002",
+      "task": "TASK-GJ-0004",
+      "title": "??????????? xlsx ??",
+      "phase": 2,
+      "status": "ready",
+      "priority": "P0",
+      "acceptance": [
+        "????????????????????? xlsx ?",
+        "????? Excel ??????????",
+        "????????????????????"
+      ],
+      "tests": [
+        "dependency audit",
+        "malicious workbook fixtures",
+        "import/export regression"
+      ],
+      "evidence": []
+    }
+  ]
+}
