@@ -105,7 +105,8 @@
           "线索路由与线索领域服务",
           "AI Gateway 与集成路由装配入口"
         ],
-        "verification": "PASS: route integration; API operation baseline 167; npm run verify; Playwright 37/37"
+        "verification": "PASS: route integration; API operation baseline 167; npm run verify; Playwright 37/37",
+        "deliveryCommit": "4e25f1d"
       }
     },
     {

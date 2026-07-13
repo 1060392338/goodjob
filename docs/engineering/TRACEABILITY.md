@@ -20,7 +20,7 @@ OBJ → REQ/NFR → ADR/DESIGN → TASK → PR/COMMIT → TEST → BUILD → REL
 | REQ-GJ-ENG-001 | ADR-0001 | TASK-GJ-0001 | Commit `3d7cce6` | `npm run verify`; `npm run test:e2e` 36/36 | Done |
 | REQ-GJ-SEC-001 | 风险 R-001；`DEVELOPMENT_ACCOUNTS.md` | TASK-GJ-0002 | 分支 `codex/phase-0-security-baseline` | 仓库安全检查；生产配置测试；`npm run verify`; E2E 36/36 | Verification |
 | REQ-GJ-SEC-002 | ADR-0004；风险 R-010 | TASK-GJ-0004 | 分支 `codex/phase-0-workbook-security` | 依赖审计 0；工作簿安全测试；`npm run verify`；E2E 37/37 | Done |
-| REQ-GJ-ARCH-001 | ADR-0005；风险 R-004 | TASK-GJ-0003 | 分支 `codex/phase-1-route-modularization`；L-0004 本循环提交 | `test:routes`; API 167；`verify`; E2E 37/37 | In progress |
+| REQ-GJ-ARCH-001 | ADR-0005；风险 R-004 | TASK-GJ-0003 | Commit `4e25f1d`；分支 `codex/phase-1-route-modularization` | `test:routes`; API 167；`verify`; E2E 37/37 | In progress |
 | REQ-GJ-AI-001 | ADR-0002 | TASK-GJ-0101 | 待开始 | Gateway 契约与故障注入 | Backlog |
 | REQ-GJ-LEAD-001 | ADR-0003 | TASK-GJ-0201 | 待开始 | Connector 契约与幂等 | Backlog |
 | REQ-GJ-AI-LEAD-001 | ADR-0002 | TASK-GJ-0301 | 待开始 | 金标评测；注入防护 | Backlog |

@@ -39,14 +39,13 @@
 - 实现：系统健康检查、认证登录/退出/当前用户、共享 asyncRoute 边界；
 - 独立测试：`npm run test:routes`；
 - 回归：`npm run verify` PASS；security 保持 167；Playwright 37/37；
-- 状态：本地实现和验证完成，待提交；总体架构需求继续 `in_progress`。
+- 状态：已提交 Commit `4e25f1d`；总体架构需求继续 `in_progress`。
 
 ## 下一优先级
 
-1. 提交并收口 L-0004，保存 Commit 证据。
-2. L-0005：客户路由与客户领域服务第一批拆分，保持数据范围和响应契约。
-3. L-0006：线索路由/来源血缘边界，为 LeadSourceConnector 铺路。
-4. 完成架构边界后进入 OpenAI-compatible Model Gateway。
+1. L-0005：客户路由与客户领域服务第一批拆分，保持数据范围和响应契约。
+2. L-0006：线索路由/来源血缘边界，为 LeadSourceConnector 铺路。
+3. 完成架构边界后进入 OpenAI-compatible Model Gateway。
 
 ## 阻塞项
 

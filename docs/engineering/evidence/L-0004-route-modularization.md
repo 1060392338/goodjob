@@ -3,7 +3,7 @@
 - 日期：2026-07-13
 - 分支：`codex/phase-1-route-modularization`
 - 基线提交：`d66eee4`
-- 交付提交：本循环提交（提交后由 Git 历史反查）
+- 交付提交：`4e25f1d`
 - 关联：`REQ-GJ-ARCH-001 / TASK-GJ-0003`
 - 设计：`ADR-0005`
 - 本地环境：Windows；Node `v24.14.0`；npm `11.9.0`

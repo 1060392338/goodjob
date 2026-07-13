@@ -6,11 +6,11 @@
 
 - 仓库：GoodJob 本地克隆
 - 分支：`codex/phase-1-route-modularization`
-- 基线：`d66eee4`
+- 当前 HEAD：`4e25f1d`
 - 当前循环：`L-0004`
 - 需求/任务：`REQ-GJ-ARCH-001 / TASK-GJ-0003`
 
-## L-0004 已完成，待提交
+## L-0004 已完成并提交
 
 - 新增 `ADR-0005`，确定渐进式路由模块化和 Composition Root 边界。
 - 新增正式分阶段开发计划和 GitHub Skill 评估记录。
@@ -27,6 +27,7 @@
 - `3d7cce6`：工程 Harness 与 Loop Engineering 基线。
 - `e5c38b4`：默认凭证和生产运行时安全基线。
 - `d66eee4`：工作簿安全与依赖供应链修复。
+- `4e25f1d`：后端系统/认证路由模块化第一批与正式阶段文档。
 
 ## 下一开发循环
 
