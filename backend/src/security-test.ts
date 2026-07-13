@@ -276,6 +276,10 @@ try {
   if (documentedOperations !== registeredOperations) {
     throw new Error(`OpenAPI coverage mismatch: ${documentedOperations}/${registeredOperations}`);
   }
+  const expectedApiOperationBaseline = 167;
+  if (registeredOperations !== expectedApiOperationBaseline) {
+    throw new Error(`API operation baseline changed without an approved contract update: ${registeredOperations}/${expectedApiOperationBaseline}`);
+  }
   const docsUi = await fetch(`${baseUrl}/api/docs/`, {
     headers: { authorization: `Bearer ${admin.json.token}` }
   });

@@ -7,7 +7,7 @@
 | R-001 | 仓库包含默认登录账号说明或历史示例凭证，可能被误用于真实环境 | Critical | Verification | 当前分支已删除说明与密码预填，并增加生产配置门禁；待 GitHub 历史扫描、部署实例确认及必要轮换 | 阶段 0 |
 | R-002 | 原仓库无 `.gitignore`，依赖、环境文件和运行缓存可能误提交 | High | Mitigated | 已新增 `.gitignore` 与仓库安全检查；远端 CI 待实跑 | 阶段 0 |
 | R-003 | Windows 下测试与 E2E 脚本使用 Unix 环境变量语法 | High | Mitigated | 已使用 `cross-env`，Windows 本地验证通过；Linux 由 GitHub Actions 待验证 | 阶段 0 |
-| R-004 | 后端 `server.ts` 与前端 `prototype-api.ts` 文件过大，修改影响面和冲突风险高 | High | Open | 先用回归测试锁定行为，再按领域拆分路由和组件 | 阶段 2 |
+| R-004 | 后端 `server.ts` 与前端 `prototype-api.ts` 文件过大，修改影响面和冲突风险高 | High | Mitigating | ADR-0005 规定渐进拆分；L-0004 已迁移系统/认证 4 个 API 并新增独立路由测试与 167 操作基线；继续迁移客户、线索、AI、集成和前端模块 | 阶段 2 |
 | R-005 | MySQL Store 具有原型阶段全量持久化特征，扩展性与数据竞争风险高 | High | Open | 设计正式迁移与按表/按行增量持久化；恢复演练 | 阶段 2 |
 | R-006 | AI/网页采集可能造成敏感数据泄漏、提示注入或不合规采集 | Critical | Open | Gateway 脱敏、来源白名单、恶意内容隔离、审计、人工确认 | 阶段 1/3/4 |
 | R-007 | WhatsApp/Twilio/Puppeteer 等依赖安装包含大型浏览器下载，影响 CI 可重复性 | Medium | Open | CI 跳过非必要 Puppeteer 下载；WhatsApp 独立可选运行时 | 阶段 2 |

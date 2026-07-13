@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-13",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0003",
+  "currentIteration": "L-0004",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -75,7 +75,7 @@
       "task": "TASK-GJ-0003",
       "title": "拆分后端超大路由文件并建立模块边界",
       "phase": 2,
-      "status": "backlog",
+      "status": "in_progress",
       "priority": "P0",
       "acceptance": [
         "认证、客户、线索、AI、集成路由按模块装配",
@@ -87,7 +87,26 @@
         "npm run test",
         "npm run test:security"
       ],
-      "evidence": []
+      "evidence": [
+        "docs/engineering/evidence/L-0004-route-modularization.md"
+      ],
+      "design": [
+        "docs/engineering/adr/ADR-0005-route-modularization.md"
+      ],
+      "progress": {
+        "completedSlices": [
+          "系统健康检查路由模块",
+          "认证登录/退出/当前用户路由模块",
+          "共享 asyncRoute HTTP 边界",
+          "独立路由集成测试门禁"
+        ],
+        "nextSlices": [
+          "客户路由与客户领域服务",
+          "线索路由与线索领域服务",
+          "AI Gateway 与集成路由装配入口"
+        ],
+        "verification": "PASS: route integration; API operation baseline 167; npm run verify; Playwright 37/37"
+      }
     },
     {
       "id": "REQ-GJ-AI-001",
@@ -222,6 +241,10 @@
         "evidence": [
           "docs/engineering/evidence/L-0003-workbook-security.md"
         ]
+      },
+      "implementation": {
+        "commit": "d66eee4",
+        "branch": "codex/phase-0-workbook-security"
       }
     }
   ]

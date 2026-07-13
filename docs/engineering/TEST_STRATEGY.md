@@ -24,6 +24,7 @@ npm run audit:dependencies
 
 - 仓库敏感文件检查；
 - 依赖版本、来源和完整性策略检查；
+- 后端路由模块独立集成测试；
 - 后端 self-test；
 - 前端 self-test；
 - 后端安全测试；
@@ -64,3 +65,12 @@ npm run audit:dependencies
 - 解析结果必须使用无原型对象；
 - 依赖锁必须固定已批准版本、官方来源和 SHA-512 完整性；
 - CI 必须执行 High/Critical 依赖审计；High/Critical 不为 0 时禁止合并。
+
+## 路由模块化标准
+
+- 每个路由模块不得导入或启动全局 Express app；由 Composition Root 显式注册；
+- 模块必须可在最小 Express 应用中独立测试；
+- 迁移不得改变 URL、方法、状态码、响应结构、认证、权限、CSRF、限流和缓存头；
+- OpenAPI 文档操作数必须与注册路由操作数一致；当前基线固定为 167，计划增删接口必须同步 ADR、测试和文档；
+- 每批迁移至少运行 `npm run test:routes`、`npm run test:security`、`npm run verify` 和 P0 E2E；
+- 禁止通过修改断言接受未登记的契约变化。

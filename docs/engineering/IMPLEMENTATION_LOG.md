@@ -103,3 +103,46 @@
 ### 结果
 
 `REQ-GJ-SEC-002 / TASK-GJ-0004` 的验收条件全部满足，R-010 关闭。下一循环进入架构模块边界拆分准备。
+
+## 2026-07-13 — Loop L-0004：后端路由模块化第一批
+
+### 目标
+
+在不改变 GoodJob 现有 API、权限和业务行为的前提下，建立可持续的后端模块装配方式，并完成系统/认证低风险第一批迁移。
+
+### Orient / Select
+
+- 基线 Commit：`d66eee4`；分支：`codex/phase-1-route-modularization`。
+- 选择 `REQ-GJ-ARCH-001 / TASK-GJ-0003`，风险对应 R-004。
+- 现状基线：`server.ts` 超过 7000 个物理行；OpenAPI/注册 API 操作 167；E2E 37 条。
+
+### Plan / Decision
+
+- 新增 ADR-0005：只做渐进式搬迁，`server.ts` 保留 Composition Root。
+- 首批只迁移 4 个低耦合操作：health、login、logout、me。
+- 模块导出显式注册函数，不导入全局 app；共享异步错误边界放入 `http/`。
+- 不修改 URL、状态码、响应、Cookie、限流、认证、CSRF 或数据模型。
+
+### Implement
+
+- 新增 `backend/src/routes/system-routes.ts`。
+- 新增 `backend/src/routes/auth-routes.ts`。
+- 新增 `backend/src/http/async-route.ts`。
+- `server.ts` 改为显式注册系统/认证模块；内联 API 操作由 167 降至 163，总操作仍为 167。
+- 新增 `backend/src/routes/routes-test.ts` 和 `npm run test:routes`，纳入根 verify。
+- security test 增加 167 操作基线锁，防止模块迁移时 API 静默丢失。
+- 新增正式开发阶段计划和 GitHub Skill 评估记录；本轮不安装第三方 Skill。
+
+### Verify / Review
+
+- `npm run test:routes`：PASS。
+- `npm run test:security`：PASS；OpenAPI/注册路由操作 167。
+- `npm run verify`：PASS。
+- `npm run test:e2e`：PASS，37/37。
+- 后端构建：PASS；无新生产依赖、无数据迁移、无外部调用。
+
+### Record / Next
+
+- 证据：`docs/engineering/evidence/L-0004-route-modularization.md`。
+- `REQ-GJ-ARCH-001` 保持 `in_progress`；本 Loop 完成的是第一批可回滚切片，不虚假标记总体完成。
+- 下一 Loop 迁移客户路由与客户领域服务，并增加 sales/manager/team 数据范围测试。

@@ -16,6 +16,7 @@
 
 | 文档 | 作用 | 更新时机 |
 |---|---|---|
+| `DEVELOPMENT_PLAN.md` | 正式分阶段路线、验收和测试标准 | 阶段或门禁变化时 |
 | `PROJECT_STATUS.md` | 面向项目跟进的单页状态 | 每个开发循环结束 |
 | `FEATURES.json` | 可由人或 Agent 读取的原子功能台账 | 状态、范围或证据变化时 |
 | `TRACEABILITY.md` | REQ→TASK→PR→TEST→RELEASE | 每个 PR 与 Release |
@@ -23,6 +24,7 @@
 | `TEST_STRATEGY.md` | 分层测试和发布门禁 | 测试体系变化时 |
 | `RISK_REGISTER.md` | 项目风险与处理状态 | 发现或关闭风险时 |
 | `HANDOFF.md` | 下一会话立即可执行的上下文 | 每次会话结束 |
+| `SKILL_EVALUATION.md` | 第三方开发 Skill 的采用/拒绝与安全评估 | 搜索或引入 Skill 时 |
 | `adr/` | 长期架构决策 | 决策前创建，变更时追加 ADR |
 | `evidence/` | 小型文本证据索引，不存大制品 | 验证与发布时 |
 

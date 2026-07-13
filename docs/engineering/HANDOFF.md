@@ -5,19 +5,20 @@
 ## 当前工作位置
 
 - 仓库：GoodJob 本地克隆
-- 分支：`codex/phase-0-workbook-security`
-- 基线：`e5c38b4`
-- 当前循环：L-0003
-- 需求/任务：`REQ-GJ-SEC-002 / TASK-GJ-0004`
+- 分支：`codex/phase-1-route-modularization`
+- 基线：`d66eee4`
+- 当前循环：`L-0004`
+- 需求/任务：`REQ-GJ-ARCH-001 / TASK-GJ-0003`
 
-## 本循环已完成，待提交
+## L-0004 已完成，待提交
 
-- SheetJS 从存在 High 漏洞的 npm 旧版本升级到官方 `xlsx@0.20.3` 发布包。
-- 新增 ADR-0004 和统一工作簿安全模块。
-- 保留 XLSX、XLS、CSV 兼容，集中处理所有业务导入导出。
-- 新增文件大小、签名、行列、单元格长度和危险表头防护。
-- 新增工作簿安全测试、恶意输入 E2E、依赖策略门禁和 CI 依赖审计。
-- `npm run audit:dependencies`：0 vulnerabilities。
+- 新增 `ADR-0005`，确定渐进式路由模块化和 Composition Root 边界。
+- 新增正式分阶段开发计划和 GitHub Skill 评估记录。
+- 提取系统健康检查到 `backend/src/routes/system-routes.ts`。
+- 提取认证登录、退出、当前用户到 `backend/src/routes/auth-routes.ts`。
+- 提取共享 `backend/src/http/async-route.ts`。
+- 新增最小 Express 独立路由集成测试，并加入根 `verify`。
+- security test 锁定 API 操作基线 167；模块化后 OpenAPI 仍为 167。
 - `npm run verify`：PASS。
 - `npm run test:e2e`：PASS，37/37。
 
@@ -25,31 +26,22 @@
 
 - `3d7cce6`：工程 Harness 与 Loop Engineering 基线。
 - `e5c38b4`：默认凭证和生产运行时安全基线。
-
-## L-0002 仍需外部闭环
-
-1. 获得 GitHub 目标仓库与权限后执行历史 Secret Scan。
-2. 在 GitHub Actions 的 Linux/Node 22 环境运行质量门禁。
-3. 确认是否存在部署实例；若存在，轮换账号、JWT、数据库与第三方凭证。
-4. 将远端 Commit/PR、扫描、轮换和 CI 证据补入追踪矩阵。
-
-因此 `REQ-GJ-SEC-001` 仍保持 `verification`。
+- `d66eee4`：工作簿安全与依赖供应链修复。
 
 ## 下一开发循环
 
-`REQ-GJ-ARCH-001 / TASK-GJ-0003`：拆分超大模块并建立正式领域边界。
+L-0005 继续 `REQ-GJ-ARCH-001`，迁移客户领域第一批：
 
-建议先做后端低风险第一刀：
+1. 先列出客户路由、权限和数据范围行为，不改变 API；
+2. 提取客户查询/创建/更新/批量删除和活动记录的领域服务边界；
+3. 增加客户路由独立集成测试，覆盖 sales/manager/team/cross-owner；
+4. 运行 route、self-test、security、167 API 基线和 37 E2E；
+5. 更新证据、风险、追踪和交接后再提交。
 
-1. 创建 ADR，定义路由模块装配、依赖注入和公共错误处理边界；
-2. 用现有 167 个 API 文档操作和安全测试锁定契约；
-3. 优先提取认证、健康检查或客户查询等低耦合路由，不修改 URL、权限和响应结构；
-4. 每次只移动一个领域，并运行 API/security/E2E 回归；
-5. 为后续 AI Gateway、LeadSourceConnector、钉钉/企微/飞书 Adapter 留出独立模块目录。
+## 持续外部阻塞
 
-## 已知注意事项
+- GitHub 目标仓库与权限未提供；
+- GitHub 历史 Secret Scan、Linux/Node 22 Actions、分支保护未实跑；
+- 部署实例与历史凭证轮换未确认。
 
-- 前端主包约 1.394 MB，工作簿能力后续可评估动态加载，但不能与架构拆分同时无边界扩展。
-- `server.ts` 和 `prototype-api.ts` 很大，禁止一次性重写；必须小步移动并保存行为证据。
-- `npm ci` 可能触发 WhatsApp/Puppeteer 大型浏览器下载；CI 使用 `PUPPETEER_SKIP_DOWNLOAD=true`。
-- 本地 Node 为 24，CI 目标为 Node 22，必须保留远端兼容验证项。
+`REQ-GJ-SEC-001` 因此继续保持 `verification`。

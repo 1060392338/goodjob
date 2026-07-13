@@ -7,12 +7,15 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import nodemailer from "nodemailer";
 import { z } from "zod";
-import { AUTH_COOKIE_NAME, CSRF_COOKIE_NAME, canManageAccount, canManageAccounts, canManageRole, canSeeOwner, canSeePersonalData, canSeeTeam, createCsrfToken, csrfCookieOptions, hashPassword, publicUser, requireAuth, sessionCookieOptions, signToken, verifyPassword } from "./auth.js";
+import { canManageAccount, canManageAccounts, canManageRole, canSeeOwner, canSeePersonalData, canSeeTeam, hashPassword, publicUser, requireAuth } from "./auth.js";
+import { asyncRoute } from "./http/async-route.js";
 import { createMysqlStore } from "./mysql-store.js";
 import { getStore, setStore } from "./store.js";
 import { LEAD_PROVIDERS, getProvider, providerMeta, type LeadProvider, type LeadQuery, type RawLead } from "./lead-providers.js";
 import { assertPublicHttpUrl, fetchPublicUrl } from "./outbound-security.js";
 import { registerSwagger } from "./swagger.js";
+import { registerAuthRoutes } from "./routes/auth-routes.js";
+import { registerSystemRoutes } from "./routes/system-routes.js";
 import { assertRuntimeConfiguration } from "./runtime-config.js";
 import type { AiModelConfig, CommissionCalculation, CommissionItem, CommissionProduct, CommissionRule, Customer, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, Lead, LeadSourceConfig, LeadSourceEvent, LeadSourceType, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, SalesRecordAudit, SessionUser, Todo, TradeDocument, TradeDocumentAudit, TradeDocumentSendRecord, WebsiteOpportunity } from "./types.js";
 
@@ -86,12 +89,6 @@ const apiLimiter = rateLimit({
   message: { message: "请求过于频繁，请稍后再试" }
 });
 app.use("/api", apiLimiter);
-
-function asyncRoute(handler: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    handler(req, res, next).catch(next);
-  };
-}
 
 function accountUser(user: ReturnType<typeof getStore>["users"][number]) {
   return { ...publicUser(user), status: user.status };
@@ -399,49 +396,8 @@ function buildExamQuestion(body: z.infer<typeof examQuestionSchema>, index = 0):
   };
 }
 
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, store: getStore().mode });
-});
-
-const loginSchema = z.object({
-  email: z.string().trim().email().max(180).transform((value) => value.toLowerCase()),
-  password: z.string().min(1).max(128)
-});
-
-app.post("/api/auth/login", loginLimiter, asyncRoute(async (req, res) => {
-  const body = loginSchema.parse(req.body);
-  const store = getStore();
-  const user = store.users.find((item) => item.email.toLowerCase() === body.email && item.status === "active");
-  const passwordCheck = user ? await verifyPassword(user.password, body.password) : { valid: false, needsUpgrade: false };
-  if (!user || !passwordCheck.valid) {
-    res.status(401).json({ message: "账号或密码错误" });
-    return;
-  }
-  if (passwordCheck.needsUpgrade) {
-    user.password = await hashPassword(body.password);
-    user.authVersion = user.authVersion || 1;
-    await store.persist();
-  }
-  const sessionUser = publicUser(user);
-  const token = signToken(sessionUser);
-  const csrfToken = createCsrfToken();
-  res.cookie(AUTH_COOKIE_NAME, token, sessionCookieOptions());
-  res.cookie(CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions());
-  res.setHeader("Cache-Control", "no-store");
-  res.json({ token, csrfToken, user: sessionUser });
-}));
-
-app.post("/api/auth/logout", (req, res) => {
-  res.clearCookie(AUTH_COOKIE_NAME, { ...sessionCookieOptions(), maxAge: undefined });
-  res.clearCookie(CSRF_COOKIE_NAME, { ...csrfCookieOptions(), maxAge: undefined });
-  res.setHeader("Cache-Control", "no-store");
-  res.json({ ok: true });
-});
-
-app.get("/api/auth/me", requireAuth, (req, res) => {
-  res.setHeader("Cache-Control", "no-store");
-  res.json({ user: req.user });
-});
+registerSystemRoutes(app);
+registerAuthRoutes(app, { loginLimiter });
 
 app.get("/api/profile", requireAuth, (req, res) => {
   const user = getStore().users.find((item) => item.id === req.user!.id);

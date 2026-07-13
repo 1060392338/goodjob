@@ -9,11 +9,12 @@
     "test": "npm run test --workspace backend && npm run test --workspace frontend",
     "test:e2e": "npm run test:e2e --workspace frontend",
     "test:security": "npm run test:security --workspace backend",
-    "verify": "npm run test:repo-security && npm run test:dependency-policy && npm run test && npm run test:security && npm run test:workbook-security && npm run build",
+    "verify": "npm run test:repo-security && npm run test:dependency-policy && npm run test:routes && npm run test && npm run test:security && npm run test:workbook-security && npm run build",
     "test:repo-security": "node scripts/repository-security-check.mjs",
     "test:workbook-security": "npm run test:workbook-security --workspace frontend",
     "test:dependency-policy": "node scripts/dependency-policy-check.mjs",
-    "audit:dependencies": "npm audit --audit-level=high --registry=https://registry.npmjs.org"
+    "audit:dependencies": "npm audit --audit-level=high --registry=https://registry.npmjs.org",
+    "test:routes": "npm run test:routes --workspace backend"
   },
   "workspaces": [
     "backend",
