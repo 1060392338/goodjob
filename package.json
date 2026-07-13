@@ -9,7 +9,8 @@
     "test": "npm run test --workspace backend && npm run test --workspace frontend",
     "test:e2e": "npm run test:e2e --workspace frontend",
     "test:security": "npm run test:security --workspace backend",
-    "verify": "npm run test && npm run test:security && npm run build"
+    "verify": "npm run test:repo-security && npm run test && npm run test:security && npm run build",
+    "test:repo-security": "node scripts/repository-security-check.mjs"
   },
   "workspaces": [
     "backend",

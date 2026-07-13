@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-13",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0001",
+  "currentIteration": "L-0002",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -46,7 +46,7 @@
       "task": "TASK-GJ-0002",
       "title": "处置默认账号、仓库密钥与敏感文件风险",
       "phase": 0,
-      "status": "ready",
+      "status": "verification",
       "priority": "P0",
       "acceptance": [
         "当前分支不包含真实账号或密钥",
@@ -58,7 +58,17 @@
         "secret scan",
         "npm run test:security"
       ],
-      "evidence": []
+      "evidence": [
+        "docs/engineering/evidence/L-0002-security-baseline.md"
+      ],
+      "verification": {
+        "code": "PASS: default credential document removed, login password prefill removed, repository security check added, production runtime guard added",
+        "tests": "PASS: npm run verify; PASS: Playwright 36/36; PASS: unsafe production startup exits 1",
+        "pending": "等待 GitHub 历史密钥扫描、远端质量门禁实跑及部署实例凭证轮换确认；完成前保持 verification。",
+        "evidence": [
+          "docs/engineering/evidence/L-0002-security-baseline.md"
+        ]
+      }
     },
     {
       "id": "REQ-GJ-ARCH-001",
@@ -183,14 +193,15 @@
     {
       "id": "REQ-GJ-SEC-002",
       "task": "TASK-GJ-0004",
-      "title": "??????????? xlsx ??",
-      "phase": 2,
+      "title": "替换存在高危漏洞且无可用修复版本的 xlsx 依赖",
+      "phase": 0,
       "status": "ready",
       "priority": "P0",
       "acceptance": [
-        "????????????????????? xlsx ?",
-        "????? Excel ??????????",
-        "????????????????????"
+        "生产代码与锁文件不再依赖存在已知 High 漏洞的 xlsx",
+        "客户 Excel 导入导出与题库导入行为保持兼容",
+        "畸形或恶意工作簿在文件大小、行数和处理时间限制内安全失败且不产生原型污染",
+        "依赖审计不再报告该 xlsx 漏洞"
       ],
       "tests": [
         "dependency audit",

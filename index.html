@@ -2755,9 +2755,9 @@
     </div>
     <div class="login-panel">
       <h2>账号登录</h2>
-      <p>原型模拟三类账号：业务员、主管、管理员。可切换查看不同数据权限。</p>
-      <div class="login-field"><label>账号</label><input value="shirley@goodjob.com"></div>
-      <div class="login-field"><label>密码</label><input type="password" value="goodjob123"></div>
+      <p>请输入已分配的账号和密码。切换身份需退出后重新登录。</p>
+      <div class="login-field"><label>账号</label><input placeholder="name@company.com" autocomplete="username"></div>
+      <div class="login-field"><label>密码</label><input type="password" placeholder="请输入密码" autocomplete="current-password"></div>
       <div class="login-field"><label>快速选择身份</label><select id="loginRole"><option value="sales">Shirley / 业务员 / 仅本人数据</option><option value="manager">Alex / 销售主管 / 全团队数据</option><option value="admin">Admin / 管理员 / 全量权限</option></select></div>
       <div class="login-users">
         <div class="login-user active" data-login-role="sales"><span class="avatar">SH</span><div><b>Shirley 业务员</b><span>仅本人客户、待办、线索、考试</span></div><span class="badge">本人</span></div>

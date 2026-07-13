@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import { app } from "./server.js";
 import { assertPublicHttpUrl } from "./outbound-security.js";
 import { getStore } from "./store.js";
+import { runtimeConfigurationIssues } from "./runtime-config.js";
 
 const TEST_JWT_SECRET = "goodjob-security-test-secret-at-least-32-characters";
 const server = app.listen(0);
@@ -47,6 +48,36 @@ async function expectStatus(label: string, actual: number, expected: number) {
 
 try {
   const results: Record<string, number | boolean> = {};
+
+  const safeProductionConfig = runtimeConfigurationIssues({
+    NODE_ENV: "production",
+    CRM_STORE: "mysql",
+    DATABASE_URL: "mysql://goodjob:strong-password@db.internal:3306/goodjob_crm",
+    JWT_SECRET: "a-production-secret-that-is-longer-than-thirty-two-characters",
+    CORS_ORIGINS: "https://crm.example.com",
+    SESSION_COOKIE_SECURE: "true"
+  });
+  if (safeProductionConfig.length) throw new Error(`safe production config rejected: ${JSON.stringify(safeProductionConfig)}`);
+
+  const unsafeProductionCodes = new Set(runtimeConfigurationIssues({
+    NODE_ENV: "production",
+    CRM_STORE: "memory",
+    JWT_SECRET: "short",
+    CORS_ORIGINS: "*",
+    SESSION_COOKIE_SECURE: "false",
+    INITIAL_ADMIN_PASSWORD: "goodjob123"
+  }).map((issue) => issue.code));
+  for (const expectedCode of [
+    "PRODUCTION_DATABASE_REQUIRED",
+    "JWT_SECRET_REQUIRED",
+    "CORS_ORIGINS_REQUIRED",
+    "SECURE_COOKIE_REQUIRED",
+    "INITIAL_ADMIN_PASSWORD_WEAK",
+    "INITIAL_ADMIN_PASSWORD_DEFAULT"
+  ]) {
+    if (!unsafeProductionCodes.has(expectedCode)) throw new Error(`missing runtime config issue: ${expectedCode}`);
+  }
+  results.productionRuntimeConfigProtected = true;
 
   const unauthenticated = await request("/api/customers");
   await expectStatus("protected endpoint", unauthenticated.response.status, 401);

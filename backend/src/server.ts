@@ -13,6 +13,7 @@ import { getStore, setStore } from "./store.js";
 import { LEAD_PROVIDERS, getProvider, providerMeta, type LeadProvider, type LeadQuery, type RawLead } from "./lead-providers.js";
 import { assertPublicHttpUrl, fetchPublicUrl } from "./outbound-security.js";
 import { registerSwagger } from "./swagger.js";
+import { assertRuntimeConfiguration } from "./runtime-config.js";
 import type { AiModelConfig, CommissionCalculation, CommissionItem, CommissionProduct, CommissionRule, Customer, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, Lead, LeadSourceConfig, LeadSourceEvent, LeadSourceType, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, SalesRecordAudit, SessionUser, Todo, TradeDocument, TradeDocumentAudit, TradeDocumentSendRecord, WebsiteOpportunity } from "./types.js";
 
 function loadLocalEnv() {
@@ -7008,6 +7009,7 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 async function startServer() {
+  assertRuntimeConfiguration();
   const port = Number(process.env.PORT || 4188);
   const mysqlRequested = process.env.CRM_STORE === "mysql"
     || (process.env.CRM_STORE !== "memory" && Boolean(process.env.DATABASE_URL || process.env.MYSQL_URL));

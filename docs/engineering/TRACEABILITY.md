@@ -1,4 +1,4 @@
-﻿# 需求追踪矩阵
+# 需求追踪矩阵
 
 更新时间：2026-07-13
 
@@ -17,8 +17,9 @@ OBJ → REQ/NFR → ADR/DESIGN → TASK → PR/COMMIT → TEST → BUILD → REL
 
 | REQ | ADR/设计 | TASK | 实现/PR | 测试 | 状态 |
 |---|---|---|---|---|---|
-| REQ-GJ-ENG-001 | ADR-0001 | TASK-GJ-0001 | 当前分支 | `npm run verify`; `npm run test:e2e` | 进行中 |
-| REQ-GJ-SEC-001 | 风险 R-001 | TASK-GJ-0002 | 待开始 | 密钥扫描；安全测试 | Ready |
+| REQ-GJ-ENG-001 | ADR-0001 | TASK-GJ-0001 | Commit `3d7cce6` | `npm run verify`; `npm run test:e2e` 36/36 | Done |
+| REQ-GJ-SEC-001 | 风险 R-001；`DEVELOPMENT_ACCOUNTS.md` | TASK-GJ-0002 | 分支 `codex/phase-0-security-baseline` | 仓库安全检查；生产配置测试；`npm run verify`; E2E 36/36 | Verification |
+| REQ-GJ-SEC-002 | 风险 R-010 | TASK-GJ-0004 | 待开始 | 依赖审计；工作簿兼容；恶意输入与资源限制测试 | Ready |
 | REQ-GJ-ARCH-001 | 待新增 ADR | TASK-GJ-0003 | 待开始 | API 回归；权限回归 | Backlog |
 | REQ-GJ-AI-001 | ADR-0002 | TASK-GJ-0101 | 待开始 | Gateway 契约与故障注入 | Backlog |
 | REQ-GJ-LEAD-001 | ADR-0003 | TASK-GJ-0201 | 待开始 | Connector 契约与幂等 | Backlog |
@@ -26,14 +27,21 @@ OBJ → REQ/NFR → ADR/DESIGN → TASK → PR/COMMIT → TEST → BUILD → REL
 | REQ-GJ-AI-ASSIST-001 | ADR-0002 | TASK-GJ-0401 | 待开始 | 权限矩阵；确认执行 | Backlog |
 | REQ-GJ-COLLAB-001 | ADR-0003 | TASK-GJ-0501 | 待开始 | Adapter 契约；Webhook 安全 | Backlog |
 
+## L-0002 未闭环项
+
+- GitHub 历史 Secret Scan 结果；
+- GitHub Actions Linux/Node 22 质量门禁结果；
+- 已部署实例清单及账号、JWT、数据库、第三方凭证轮换记录；
+- 目标 Commit/PR 与远端证据链接。
+
 ## 完整性检查
 
 每个循环结束时检查：
 
-- [ ] REQ 有明确验收条件；
-- [ ] ADR/设计解释关键决策；
-- [ ] TASK 范围可在一个短分支完成；
+- [x] REQ 有明确验收条件；
+- [x] ADR/设计解释关键决策；
+- [x] TASK 范围可在一个短分支完成；
 - [ ] PR 关联 TASK/REQ；
-- [ ] 测试报告包含命令、环境、结果和失败项；
-- [ ] BUILD 绑定 Commit SHA；
+- [x] 本地测试证据包含命令、环境和结果；
+- [ ] BUILD 绑定远端 Commit SHA；
 - [ ] Release 能反查全部 P0/P1 REQ。
