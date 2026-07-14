@@ -28,7 +28,7 @@
 | API 契约 | OpenAPI 与注册路由均保持 167 个操作；安全测试锁定基线 |
 | E2E | Playwright 37/37 |
 | 安全 | `npm audit --audit-level=high` 为 0；历史与部署凭证仍待远端闭环 |
-| 远端 | 尚未提供目标 GitHub 仓库地址和写权限 |
+| 远端 | GitHub `1060392338/goodjob` 已建立；`master` 与当前开发分支已推送，Gitee `origin` 保留 |
 
 ## 当前循环
 
@@ -50,7 +50,8 @@
 
 ## 阻塞项
 
-- 未提供目标 GitHub 仓库地址和写权限，无法完成远端迁移、历史扫描、保护规则和 Actions 实跑。
+- GitHub 仓库当前为 Public；是否调整为 Private 需由项目负责人确认。
+- GitHub Actions、历史 Secret Scan 与分支保护尚未形成远端通过证据。
 - 未确认现有部署实例清单，无法证明历史默认凭证已全部失效。
 - 第三方线索数据厂商未指定；先实现通用 Connector 和 Mock，不阻塞接口建设。
 - 钉钉、企微、飞书当前只建设统一 Adapter 与 Mock，不需要真实企业凭证。

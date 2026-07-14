@@ -38,6 +38,17 @@
 - `16baac4`：L-0004 交付证据。
 - `ff90350`：L-0005 客户路由与领域服务模块化。
 
+## GitHub 远端状态
+
+- Gitee 业务基线继续保留为 `origin`：`https://gitee.com/sendoh-huang/GoodJob.git`。
+- GitHub 协作远端已新增为 `github`：`https://github.com/1060392338/goodjob.git`。
+- GitHub 可见性：Public（2026-07-14 实测）。
+- 已推送 `master`：`9f7d1542713f4ffa104a855a8cb15b09f5768c31`。
+- 已推送 `codex/phase-1-route-modularization`：`6cdd169dbdc11257c41e6adef47d15fc394408b3`。
+- 本地与 GitHub 当前开发分支 Commit 比对：PASS。
+- 待完成：Pull Request、Linux/Node 22 Actions 实跑、历史 Secret Scan、分支保护和部署凭证轮换确认。
+- 证据：`docs/engineering/evidence/GH-0001-repository-bootstrap.md`。
+
 ## 下一开发循环
 
 L-0006 继续 `REQ-GJ-ARCH-001 / TASK-GJ-0003`：
@@ -50,7 +61,7 @@ L-0006 继续 `REQ-GJ-ARCH-001 / TASK-GJ-0003`：
 
 ## 持续外部阻塞
 
-- GitHub 目标仓库与权限未提供；
+- GitHub 目标仓库已经建立，但 Actions、历史扫描和保护规则仍待闭环；
 - GitHub 历史 Secret Scan、Linux/Node 22 Actions、分支保护未实跑；
 - 部署实例与历史凭证轮换未确认。
 

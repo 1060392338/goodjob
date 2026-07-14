@@ -187,3 +187,25 @@
 - 证据：`docs/engineering/evidence/L-0005-customer-modularization.md`。
 - L-0005 已由 Commit `ff90350` 交付；本次文档提交回填精确证据。
 - `REQ-GJ-ARCH-001` 保持 `in_progress`；下一循环为 L-0006 线索路由、来源血缘与领域服务边界。
+
+## 2026-07-14 — GitHub 远端初始化
+
+### Orient / Decision
+
+- Gitee `origin` 继续作为 GoodJob 业务基线，不替换、不删除。
+- GitHub 使用独立 `github` 远端，避免误覆盖业务基线。
+- 目标仓库：`1060392338/goodjob`；创建时为空仓库，当前可见性为 Public。
+
+### Implement / Verify
+
+- 新增 `github` 远端：`https://github.com/1060392338/goodjob.git`。
+- 推送 `master` 基线 Commit `9f7d154`。
+- 推送开发分支 `codex/phase-1-route-modularization` Commit `6cdd169`。
+- `git ls-remote --heads github` 返回两个目标分支。
+- 本地 HEAD 与 GitHub 开发分支 Commit 均为 `6cdd169dbdc11257c41e6adef47d15fc394408b3`。
+
+### Review / Next
+
+- 仓库创建和提交一致性已验证，但不得据此声称远端安全门禁完成。
+- 后续通过 Pull Request 触发 Linux/Node 22 Actions，并继续完成历史 Secret Scan、分支保护与部署凭证轮换确认。
+- 证据：`docs/engineering/evidence/GH-0001-repository-bootstrap.md`。
