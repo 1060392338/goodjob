@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-14",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0005",
+  "currentIteration": "L-0006",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -89,7 +89,8 @@
       ],
       "evidence": [
         "docs/engineering/evidence/L-0004-route-modularization.md",
-        "docs/engineering/evidence/L-0005-customer-modularization.md"
+        "docs/engineering/evidence/L-0005-customer-modularization.md",
+        "docs/engineering/evidence/L-0006-lead-modularization.md"
       ],
       "design": [
         "docs/engineering/adr/ADR-0005-route-modularization.md"
@@ -100,33 +101,42 @@
           "认证登录/退出/当前用户路由模块",
           "共享 asyncRoute HTTP 边界",
           "独立路由集成测试门禁",
-          "客户查询/创建/更新/批量删除/活动 5 个 API 与客户领域服务"
+          "客户查询/创建/更新/批量删除/活动 5 个 API 与客户领域服务",
+          "线索查询/详情/创建/摄取/更新/垃圾箱/恢复/永久删除/活动 9 个 API、来源血缘与线索领域服务"
         ],
         "nextSlices": [
-          "线索路由与线索领域服务",
+          "线索社交触达、邮件发送、转化预览与转客户/商机 4 个高耦合 API",
           "AI Gateway 与集成路由装配入口"
         ],
-        "verification": "PASS: system/auth/customer route integration; API operation baseline 167; npm run verify; Playwright 37/37",
-        "deliveryCommit": "4e25f1d",
+        "verification": "PASS: system/auth/customer/lead route integration; source idempotency and tenant lineage; API operation baseline 167; npm run verify; Playwright 37/37",
+        "deliveryCommit": "3e5c5b3",
         "currentSlice": {
-          "loop": "L-0005",
-          "scope": "客户查询、创建、更新、批量删除、客户活动路由与客户领域服务",
+          "loop": "L-0006",
+          "scope": "线索核心摄取与生命周期 9 个 API、来源血缘、幂等和线索领域服务",
           "status": "completed",
-          "baselineCommit": "16baac4",
+          "baselineCommit": "eb34489",
           "acceptance": [
-            "5 个客户 API 迁出 server.ts 且 API 操作总数保持 167",
-            "sales、manager、admin、super_admin 数据范围与跨负责人/跨团队行为不变",
-            "批量删除关联清理、客户活动和持久化行为不变",
-            "独立客户路由测试、self-test、security、build、E2E 全部通过"
+            "9 个核心线索 API 迁出 server.ts 且 API 操作总数保持 167",
+            "sales、manager、admin、super_admin 数据范围和跨团队 404 行为不变",
+            "来源幂等键 ownerId + sourceChannel + externalId、rawPayload 与 owner/team 血缘不变",
+            "阶段活动、垃圾箱、恢复、已转客户保护、永久清理和跟进状态推进不变",
+            "独立线索路由测试、self-test、security、build、E2E 全部通过"
+          ],
+          "deferred": [
+            "POST /api/leads/:id/social-touch",
+            "POST /api/leads/:id/send-email",
+            "GET /api/leads/:id/conversion-preview",
+            "POST /api/leads/:id/convert"
           ],
           "verification": {
-            "routeTests": "PASS: core routes and customer route integration; sales/manager/admin/super_admin scopes; persistence and cascade cleanup",
-            "apiContract": "PASS: registered/OpenAPI operations 167",
+            "routeTests": "PASS: core/customer/lead route integration; role scopes; source tenant filter; idempotency; lifecycle and cascade cleanup; persist count 9",
+            "apiContract": "PASS: registered/OpenAPI operations 167; cross-module tenant isolation 18",
             "fullGate": "PASS: npm run test; npm run test:security; npm run verify",
             "e2e": "PASS: Playwright 37/37",
             "diff": "PASS: git diff --check"
           },
-          "deliveryCommit": "ff90350"
+          "deliveryCommit": "3e5c5b3",
+          "evidence": "docs/engineering/evidence/L-0006-lead-modularization.md"
         }
       }
     },

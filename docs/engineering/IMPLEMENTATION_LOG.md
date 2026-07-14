@@ -209,3 +209,45 @@
 - 仓库创建和提交一致性已验证，但不得据此声称远端安全门禁完成。
 - 后续通过 Pull Request 触发 Linux/Node 22 Actions，并继续完成历史 Secret Scan、分支保护与部署凭证轮换确认。
 - 证据：`docs/engineering/evidence/GH-0001-repository-bootstrap.md`。
+
+## 2026-07-14 — Loop L-0006：线索核心路由、生命周期与来源血缘模块化
+
+### Orient / Select
+
+- 基线 Commit：`eb34489`；分支：`codex/phase-1-route-modularization`。
+- 继续 `REQ-GJ-ARCH-001 / TASK-GJ-0003`，风险对应 R-004，设计沿用 ADR-0005。
+- 冻结 9 个核心线索 API；不改变 URL、权限、状态码、响应、Store 模式、数据模型或外部调用。
+- 社交触达、邮件发送、转化预览和转客户/商机 4 个高耦合 API 明确延后，不同时开发 AI 或协作平台。
+
+### Plan / Acceptance
+
+- 路由层负责 Zod 校验和 HTTP 契约；线索领域服务负责来源摄取、幂等、租户范围、生命周期、活动、清理与客户匹配。
+- 来源幂等键冻结为 `ownerId + sourceChannel + externalId`；来源事件保留 raw payload 和 owner/team 血缘。
+- 显式 `registerLeadRoutes(app)` 装配，OCR/Website 同步与转化预览继续复用提取后的服务函数。
+- 独立测试覆盖四级角色范围、越权、垃圾箱、详情租户过滤、幂等、阶段活动、恢复和永久清理。
+- 完整计划、验收、测试和回滚：`docs/engineering/evidence/L-0006-lead-modularization.md`。
+
+### Implement
+
+- 新增 `backend/src/domain/leads/lead-service.ts`，集中来源摄取、幂等、范围、详情、更新、垃圾箱、恢复、永久清理、活动和客户匹配。
+- 新增 `backend/src/routes/lead-routes.ts`，显式注册 9 个核心线索 API。
+- 新增 `backend/src/routes/lead-routes-test.ts`，并将 lead 路由测试纳入 `test:routes` 与 `verify`。
+- `server.ts` 继续作为 Composition Root；4 个外联/转化接口保留原位。
+- `server.ts` 6850 → 6526 行，净减少 324 行；无新生产依赖、无数据迁移、无新增外部调用。
+
+### Verify / Review
+
+- `npm run test:routes`：PASS；core/customer/lead 三组独立测试通过，测试 Store 记录 9 次预期持久化。
+- `npm run test`：PASS；backend self-test、frontend 39 checks。
+- `npm run test:security`：PASS；OpenAPI/注册操作 167，跨模块租户隔离 18。
+- `npm run verify`：PASS；仓库安全检查 94 个已跟踪文件，依赖、工作簿和双端构建门禁通过。
+- `npm run test:e2e`：PASS，Chromium 37/37。
+- `npm run build --workspace backend`：PASS；`git diff --check`：PASS。
+- 前端约 1.394 MB 构建警告继续由 R-008 跟踪，本循环未扩大该风险。
+
+### Record / Next
+
+- 代码 Commit：`3e5c5b3`。
+- 证据：`docs/engineering/evidence/L-0006-lead-modularization.md`。
+- `REQ-GJ-ARCH-001` 保持 `in_progress`；不得因 9 个核心接口迁移完成而提前标记总体完成。
+- 下一循环 L-0007 处理社交触达、邮件发送、转化预览和转客户/商机 4 个高耦合接口，先冻结外部副作用和跨聚合事务测试，再实施迁移。
