@@ -185,5 +185,5 @@
 ### Record / Next
 
 - 证据：`docs/engineering/evidence/L-0005-customer-modularization.md`。
-- L-0005 本地验收完成；交付 Commit 待回填。
+- L-0005 已由 Commit `ff90350` 交付；本次文档提交回填精确证据。
 - `REQ-GJ-ARCH-001` 保持 `in_progress`；下一循环为 L-0006 线索路由、来源血缘与领域服务边界。

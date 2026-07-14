@@ -6,7 +6,7 @@
 - 基线 Commit：`16baac4`
 - 分支：`codex/phase-1-route-modularization`
 - 设计依据：`ADR-0005`
-- 状态：Completed locally；交付 Commit 待回填
+- 状态：Completed；代码交付 Commit `ff90350`
 
 ## Orient / 范围冻结
 
@@ -113,6 +113,6 @@
 
 ## 交付
 
-- 代码/文档 Commit：`PENDING_LOCAL_COMMIT`
-- 证据回填 Commit：待代码 Commit 后创建。
+- 代码/文档 Commit：`ff90350`
+- 证据回填：由紧随代码交付的 `docs(engineering)` 提交完成。
 - `REQ-GJ-ARCH-001` 继续保持 `in_progress`，因为线索、AI、集成和前端边界仍未完成。

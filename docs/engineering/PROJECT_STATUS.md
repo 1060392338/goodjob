@@ -40,7 +40,7 @@
 - 专项：独立客户路由测试覆盖 sales/manager/admin/super_admin、越权、持久化和级联清理；
 - 回归：`npm run verify` PASS；OpenAPI/注册操作 167；Playwright 37/37；
 - 规模：`server.ts` 6990 → 6850，净减少 140 行；
-- 状态：L-0005 本地验收完成，交付 Commit 待回填；总体 `REQ-GJ-ARCH-001` 继续 `in_progress`。
+- 状态：L-0005 已由 Commit `ff90350` 交付；总体 `REQ-GJ-ARCH-001` 继续 `in_progress`。
 
 ## 下一优先级
 

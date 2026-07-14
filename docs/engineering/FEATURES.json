@@ -126,7 +126,7 @@
             "e2e": "PASS: Playwright 37/37",
             "diff": "PASS: git diff --check"
           },
-          "deliveryCommit": "PENDING_LOCAL_COMMIT"
+          "deliveryCommit": "ff90350"
         }
       }
     },
