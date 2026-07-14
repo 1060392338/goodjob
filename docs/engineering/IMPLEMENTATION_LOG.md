@@ -146,3 +146,44 @@
 - 证据：`docs/engineering/evidence/L-0004-route-modularization.md`。
 - `REQ-GJ-ARCH-001` 保持 `in_progress`；本 Loop 完成的是第一批可回滚切片，不虚假标记总体完成。
 - 下一 Loop 迁移客户路由与客户领域服务，并增加 sales/manager/team 数据范围测试。
+
+
+## 2026-07-14 — Loop L-0005：客户路由与客户领域服务模块化
+
+### Orient / Select
+
+- 基线 Commit：`16baac4`；分支：`codex/phase-1-route-modularization`。
+- 继续 `REQ-GJ-ARCH-001 / TASK-GJ-0003`，风险对应 R-004。
+- 冻结 5 个客户 API；不改变 URL、权限、状态码、响应、Store 模式或数据模型。
+- 复核确认客户聚合函数也被线索转客户响应复用，因此提取后必须保留该调用点。
+
+### Plan / Acceptance
+
+- 路由层负责参数校验与 HTTP 契约；客户领域服务负责数据范围、写入、级联清理、活动和响应聚合。
+- 显式 `registerCustomerRoutes(app)` 装配，不使用嵌套 Router，不改变 167 操作统计。
+- 独立测试覆盖 sales/manager/super_admin、跨负责人、跨团队、持久化和级联清理。
+- 完整计划、验收和测试矩阵：`docs/engineering/evidence/L-0005-customer-modularization.md`。
+
+### Implement
+
+- 新增 `backend/src/domain/customers/customer-service.ts`，集中客户数据范围、创建、更新、级联删除、活动和响应聚合。
+- 新增 `backend/src/routes/customer-routes.ts`，显式注册 5 个现有客户 API。
+- `server.ts` 通过 `registerCustomerRoutes(app)` 装配；线索转客户继续复用 `customerWithPipeline`。
+- 新增隔离 Store 的客户路由集成测试，并将 core/customer 两组测试纳入 `test:routes`。
+- `server.ts` 从 6990 行降至 6850 行；无新生产依赖、无数据迁移。
+
+### Verify / Review
+
+- `npm run test:routes`：PASS；角色范围、越权、persist 和级联清理通过。
+- `npm run test`：PASS；backend self-test、frontend 39 checks。
+- `npm run test:security`：PASS；OpenAPI/注册操作 167，跨模块租户隔离 18。
+- `npm run verify`：PASS。
+- `npm run test:e2e`：PASS，37/37。
+- `git diff --check`：PASS。
+- 前端约 1.394 MB 构建警告继续由 R-008 跟踪，本循环未扩大该风险。
+
+### Record / Next
+
+- 证据：`docs/engineering/evidence/L-0005-customer-modularization.md`。
+- L-0005 本地验收完成；交付 Commit 待回填。
+- `REQ-GJ-ARCH-001` 保持 `in_progress`；下一循环为 L-0006 线索路由、来源血缘与领域服务边界。

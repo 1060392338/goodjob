@@ -12,7 +12,9 @@
     "provision:beta-admins": "tsx src/provision-beta-admins.ts",
     "test": "cross-env NODE_ENV=test tsx src/self-test.ts",
     "test:security": "cross-env NODE_ENV=test JWT_SECRET=goodjob-security-test-secret-at-least-32-characters tsx src/security-test.ts",
-    "test:routes": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/routes-test.ts"
+    "test:routes": "npm run test:routes:core && npm run test:routes:customers",
+    "test:routes:core": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/routes-test.ts",
+    "test:routes:customers": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/customer-routes-test.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

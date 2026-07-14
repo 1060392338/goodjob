@@ -9,12 +9,14 @@ import nodemailer from "nodemailer";
 import { z } from "zod";
 import { canManageAccount, canManageAccounts, canManageRole, canSeeOwner, canSeePersonalData, canSeeTeam, hashPassword, publicUser, requireAuth } from "./auth.js";
 import { asyncRoute } from "./http/async-route.js";
+import { customerWithPipeline } from "./domain/customers/customer-service.js";
 import { createMysqlStore } from "./mysql-store.js";
 import { getStore, setStore } from "./store.js";
 import { LEAD_PROVIDERS, getProvider, providerMeta, type LeadProvider, type LeadQuery, type RawLead } from "./lead-providers.js";
 import { assertPublicHttpUrl, fetchPublicUrl } from "./outbound-security.js";
 import { registerSwagger } from "./swagger.js";
 import { registerAuthRoutes } from "./routes/auth-routes.js";
+import { registerCustomerRoutes } from "./routes/customer-routes.js";
 import { registerSystemRoutes } from "./routes/system-routes.js";
 import { assertRuntimeConfiguration } from "./runtime-config.js";
 import type { AiModelConfig, CommissionCalculation, CommissionItem, CommissionProduct, CommissionRule, Customer, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, Lead, LeadSourceConfig, LeadSourceEvent, LeadSourceType, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, SalesRecordAudit, SessionUser, Todo, TradeDocument, TradeDocumentAudit, TradeDocumentSendRecord, WebsiteOpportunity } from "./types.js";
@@ -708,96 +710,7 @@ app.delete("/api/accounts/:id", requireAuth, asyncRoute(async (req, res) => {
   res.json({ ok: true, id: req.params.id });
 }));
 
-app.get("/api/customers", requireAuth, (req, res) => {
-  const { customers } = getStore();
-  const scoped = customers.filter((customer) => canSeeOwner(req.user!, customer.ownerId, customer.teamId));
-  res.json({ customers: scoped.map(customerWithPipeline) });
-});
-
-app.post("/api/customers", requireAuth, asyncRoute(async (req, res) => {
-  const schema = z.object({
-    company: z.string().min(1),
-    country: z.string().min(1).default("未知"),
-    contact: z.string().min(1).default("待维护"),
-    stage: z.string().min(1).default("询盘"),
-    amount: z.number().int().nonnegative().default(0),
-    billingName: z.string().optional().default(""),
-    billingAddress: z.string().optional().default(""),
-    documentContact: z.string().optional().default(""),
-    defaultPortDischarge: z.string().optional().default(""),
-    defaultIncoterm: z.string().optional().default(""),
-    defaultPaymentTerm: z.string().optional().default("")
-  });
-  const body = schema.parse(req.body);
-  const store = getStore();
-  const customer = {
-    id: `c_${Date.now()}`,
-    ownerId: req.user!.id,
-    teamId: req.user!.teamId,
-    health: 72,
-    nextReminder: "明天 10:00",
-    wecomBound: false,
-    ...body
-  };
-  store.customers.unshift(customer);
-  await store.persist();
-  res.json({ customer: customerWithPipeline(customer) });
-}));
-
-app.patch("/api/customers/:id", requireAuth, asyncRoute(async (req, res) => {
-  const schema = z.object({
-    company: z.string().min(1).optional(),
-    country: z.string().min(1).optional(),
-    contact: z.string().min(1).optional(),
-    stage: z.string().min(1).optional(),
-    amount: z.number().int().nonnegative().optional(),
-    nextReminder: z.string().min(1).optional(),
-    wecomBound: z.boolean().optional(),
-    billingName: z.string().optional(),
-    billingAddress: z.string().optional(),
-    documentContact: z.string().optional(),
-    defaultPortDischarge: z.string().optional(),
-    defaultIncoterm: z.string().optional(),
-    defaultPaymentTerm: z.string().optional()
-  });
-  const body = schema.parse(req.body);
-  const store = getStore();
-  const customer = store.customers.find((item) => item.id === req.params.id);
-  if (!customer || !canSeeOwner(req.user!, customer.ownerId, customer.teamId)) {
-    res.status(404).json({ message: "客户不存在" });
-    return;
-  }
-  Object.assign(customer, body);
-  await store.persist();
-  res.json({ customer: customerWithPipeline(customer) });
-}));
-
-app.post("/api/customers/bulk-delete", requireAuth, asyncRoute(async (req, res) => {
-  const schema = z.object({ ids: z.array(z.string()).min(1).max(200) });
-  const body = schema.parse(req.body);
-  const store = getStore();
-  const ids = [...new Set(body.ids)];
-  const deleted = store.customers.filter((customer) => ids.includes(customer.id) && canSeeOwner(req.user!, customer.ownerId, customer.teamId));
-  if (!deleted.length) {
-    res.status(404).json({ message: "未找到可删除的客户" });
-    return;
-  }
-  const deletedIds = new Set(deleted.map((customer) => customer.id));
-  const deletedNames = deleted.map((customer) => customer.company);
-  store.customers = store.customers.filter((customer) => !deletedIds.has(customer.id));
-  store.customerActivities = store.customerActivities.filter((activity) => !deletedIds.has(activity.customerId));
-  const deletedDealIds = new Set(store.deals.filter((deal) => deletedIds.has(deal.customerId)).map((deal) => deal.id));
-  store.deals = store.deals.filter((deal) => !deletedIds.has(deal.customerId));
-  store.dealEvents = store.dealEvents.filter((event) => !deletedDealIds.has(event.dealId));
-  store.todos = store.todos.filter((todo) => {
-    const currentUserTodo = canSeePersonalData(req.user!, todo.ownerId);
-    const relatedToDeletedCustomer = deletedNames.some((name) => todo.related.includes(name) || todo.title.includes(name));
-    return !currentUserTodo || !relatedToDeletedCustomer;
-  });
-  await store.persist();
-  const customers = store.customers.filter((customer) => canSeeOwner(req.user!, customer.ownerId, customer.teamId));
-  res.json({ deleted, customers });
-}));
+registerCustomerRoutes(app);
 
 // ---------------------------------------------------------------------------
 // Leads (线索管理) — unified intake, follow-up and qualified conversion
@@ -933,59 +846,6 @@ function findCustomerMatches(user: SessionUser, lead: Lead) {
     .filter((match) => match.score > 0)
     .sort((left, right) => right.score - left.score);
 }
-
-const pipelineStageRank: Record<string, number> = { "询盘": 1, "已联系": 2, "已报价": 3, "样品": 4, "谈判": 5, "成交": 6 };
-
-function customerWithPipeline(customer: Customer) {
-  const store = getStore();
-  const activeDeals = store.deals.filter((deal) => deal.customerId === customer.id && !deal.archivedAt && deal.stage !== "丢单" && deal.stage !== "成交");
-  const activities = store.customerActivities
-    .filter((activity) => activity.customerId === customer.id)
-    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
-  const pipelineStage = activeDeals.reduce((best, deal) =>
-    (pipelineStageRank[deal.stage] || 0) > (pipelineStageRank[best] || 0) ? deal.stage : best, ""
-  );
-  return {
-    ...customer,
-    ownerName: store.users.find((user) => user.id === customer.ownerId)?.name || "未分配",
-    activities: activities.map((activity) => ({
-      ...activity,
-      operatorName: store.users.find((user) => user.id === activity.operatorId)?.name || "未知操作人"
-    })),
-    lastActivityAt: activities[0]?.createdAt || "",
-    pipelineStage: pipelineStage || "暂无活跃商机",
-    pipelineAmount: activeDeals.reduce((sum, deal) => sum + deal.amount, 0),
-    activeDealCount: activeDeals.length
-  };
-}
-
-app.post("/api/customers/:id/activities", requireAuth, asyncRoute(async (req, res) => {
-  const schema = z.object({
-    type: z.enum(["call", "email", "whatsapp", "wechat", "meeting", "note"]),
-    content: z.string().trim().min(1).max(2000),
-    nextReminder: z.string().trim().max(100).optional().default("")
-  });
-  const body = schema.parse(req.body);
-  const store = getStore();
-  const customer = store.customers.find((item) => item.id === req.params.id);
-  if (!customer || !canSeeOwner(req.user!, customer.ownerId, customer.teamId)) {
-    res.status(404).json({ message: "客户不存在或无权访问" });
-    return;
-  }
-  const activity = {
-    id: `ca_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    customerId: customer.id,
-    type: body.type,
-    content: body.content,
-    operatorId: req.user!.id,
-    nextReminder: body.nextReminder,
-    createdAt: new Date().toISOString()
-  };
-  store.customerActivities.unshift(activity);
-  if (body.nextReminder) customer.nextReminder = body.nextReminder;
-  await store.persist();
-  res.json({ activity, customer: customerWithPipeline(customer) });
-}));
 
 app.get("/api/leads", requireAuth, (req, res) => {
   const { leads } = getStore();

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-07-13",
+  "updatedAt": "2026-07-14",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0004",
+  "currentIteration": "L-0005",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -88,7 +88,8 @@
         "npm run test:security"
       ],
       "evidence": [
-        "docs/engineering/evidence/L-0004-route-modularization.md"
+        "docs/engineering/evidence/L-0004-route-modularization.md",
+        "docs/engineering/evidence/L-0005-customer-modularization.md"
       ],
       "design": [
         "docs/engineering/adr/ADR-0005-route-modularization.md"
@@ -98,15 +99,35 @@
           "系统健康检查路由模块",
           "认证登录/退出/当前用户路由模块",
           "共享 asyncRoute HTTP 边界",
-          "独立路由集成测试门禁"
+          "独立路由集成测试门禁",
+          "客户查询/创建/更新/批量删除/活动 5 个 API 与客户领域服务"
         ],
         "nextSlices": [
-          "客户路由与客户领域服务",
           "线索路由与线索领域服务",
           "AI Gateway 与集成路由装配入口"
         ],
-        "verification": "PASS: route integration; API operation baseline 167; npm run verify; Playwright 37/37",
-        "deliveryCommit": "4e25f1d"
+        "verification": "PASS: system/auth/customer route integration; API operation baseline 167; npm run verify; Playwright 37/37",
+        "deliveryCommit": "4e25f1d",
+        "currentSlice": {
+          "loop": "L-0005",
+          "scope": "客户查询、创建、更新、批量删除、客户活动路由与客户领域服务",
+          "status": "completed",
+          "baselineCommit": "16baac4",
+          "acceptance": [
+            "5 个客户 API 迁出 server.ts 且 API 操作总数保持 167",
+            "sales、manager、admin、super_admin 数据范围与跨负责人/跨团队行为不变",
+            "批量删除关联清理、客户活动和持久化行为不变",
+            "独立客户路由测试、self-test、security、build、E2E 全部通过"
+          ],
+          "verification": {
+            "routeTests": "PASS: core routes and customer route integration; sales/manager/admin/super_admin scopes; persistence and cascade cleanup",
+            "apiContract": "PASS: registered/OpenAPI operations 167",
+            "fullGate": "PASS: npm run test; npm run test:security; npm run verify",
+            "e2e": "PASS: Playwright 37/37",
+            "diff": "PASS: git diff --check"
+          },
+          "deliveryCommit": "PENDING_LOCAL_COMMIT"
+        }
       }
     },
     {
