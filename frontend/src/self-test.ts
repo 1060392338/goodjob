@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 
 const prototype = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const apiLayer = readFileSync(new URL("./prototype-api.ts", import.meta.url), "utf8");
+const leadSourceCenter = readFileSync(new URL("./lead-source-center.ts", import.meta.url), "utf8");
+const implementationSources = [prototype, apiLayer, leadSourceCenter];
 
 const required = [
   "login-screen",
@@ -23,6 +25,8 @@ const required = [
   "/api/lead-finder/providers",
   "/api/lead-finder/search",
   "/api/lead-finder/source-config",
+  "createLeadSourceCenterClient",
+  "defaultSelectedLeadSourceIds",
   "/conversion-preview",
   "转为客户",
   "createDeal",
@@ -46,7 +50,7 @@ const required = [
 ];
 
 for (const token of required) {
-  if (!prototype.includes(token) && !apiLayer.includes(token)) throw new Error(`missing ${token}`);
+  if (!implementationSources.some((content) => content.includes(token))) throw new Error(`missing ${token}`);
 }
 
 if (!prototype.includes(".report-hero") || !prototype.includes(".ocr-workbench") || !prototype.includes(".account-grid")) {

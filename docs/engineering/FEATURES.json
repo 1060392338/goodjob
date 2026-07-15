@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0009",
+  "currentIteration": "L-0010",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -156,6 +156,42 @@
             "diff": "PASS: git diff --check"
           },
           "evidence": "docs/engineering/evidence/L-0009-lead-source-connector.md"
+        }
+      }
+    },
+    {
+      "id": "REQ-GJ-FE-001",
+      "task": "TASK-GJ-0005",
+      "title": "渐进拆分前端超大模块并建立领域边界",
+      "phase": 2,
+      "status": "in_progress",
+      "priority": "P0",
+      "acceptance": [
+        "线索来源中心类型、选择规则和 4 个配置 API 客户端迁出 prototype-api.ts",
+        "现有 DOM 标识、交互流程、API 契约、错误提示和移动端行为不回归",
+        "新模块具备独立契约测试并纳入统一前端测试门禁"
+      ],
+      "tests": [
+        "npm run test:lead-source-center --workspace frontend",
+        "npm run verify",
+        "npm run test:e2e"
+      ],
+      "evidence": [],
+      "design": [
+        "docs/engineering/adr/ADR-0009-frontend-lead-source-center-boundary.md"
+      ],
+      "progress": {
+        "currentSlice": {
+          "loop": "L-0010",
+          "scope": "前端线索来源中心类型、选择状态和配置 API 客户端边界",
+          "status": "in_progress",
+          "baselineCommit": "3662a11",
+          "acceptance": [
+            "默认来源选择排除 ai_search 且用户手动选择在刷新后保留",
+            "保存、测试和删除保持既有 URL、方法、请求体与选择语义",
+            "页面 DOM、文案、按钮状态、导航和移动端行为不变",
+            "专项测试、verify、E2E、安全与依赖门禁全部通过"
+          ]
         }
       }
     },

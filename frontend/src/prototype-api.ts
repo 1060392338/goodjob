@@ -2,6 +2,14 @@ type Role = "sales" | "manager" | "admin" | "super_admin";
 type DashboardPeriod = "today" | "week" | "month";
 
 import { downloadWorkbook, readWorkbookRows } from "./workbook";
+import {
+  createLeadSourceCenterClient,
+  markLeadSourceSelected,
+  refreshLeadSourceProviders,
+  removeLeadSourceSelection,
+  toggleLeadSourceSelection,
+  type LeadProviderStatus
+} from "./lead-source-center";
 import * as echarts from "echarts/core";
 import { LineChart } from "echarts/charts";
 import { GridComponent, TooltipComponent } from "echarts/components";
@@ -485,26 +493,6 @@ interface ProspectAssignee {
   name: string;
   role: string;
   teamId: string;
-}
-
-interface LeadProviderStatus {
-  id: string;
-  name: string;
-  tier: "free" | "byok_free" | "paid" | "ai";
-  category: "web" | "company" | "email" | "ai";
-  requiresKey: boolean;
-  capabilities: string[];
-  docsUrl: string;
-  keyHint: string;
-  defaultBaseUrl: string;
-  costNote: string;
-  hasApiKey: boolean;
-  ready: boolean;
-  enabled: boolean;
-  lastTestStatus: "untested" | "passed" | "failed";
-  lastTestMessage: string;
-  lastTestAt: string;
-  usage: string;
 }
 
 interface LeadFinderJob {
@@ -1401,6 +1389,8 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+const leadSourceCenterClient = createLeadSourceCenterClient(api);
+
 async function loginWithPassword(email: string, password: string) {
   const result = await api<{ user: User }>("/api/auth/login", {
     method: "POST",
@@ -1784,13 +1774,8 @@ async function refreshAll(user: User) {
 
 async function loadLeadProviders() {
   try {
-    const result = await api<{ providers: LeadProviderStatus[] }>("/api/lead-finder/providers");
-    state.leadProviders = result.providers || [];
-    if (!state.leadSourceSelectionTouched) {
-      // 默认选中：所有免费源 + 已配置启用的源
-      // AI 搜索按 token 计费，默认不自动勾选，由用户按需开启
-    state.selectedLeadSources = state.leadProviders.filter((item) => item.ready && item.enabled && item.id !== "ai_search").map((item) => item.id);
-    }
+    const result = await leadSourceCenterClient.loadProviders();
+    Object.assign(state, refreshLeadSourceProviders(state, result.providers || []));
     renderLeadSourceChips();
   } catch {
     // 数据源加载失败时保留兜底提示，不影响主流程
@@ -9351,9 +9336,7 @@ function renderLeadSourceChips() {
         }
         return;
       }
-      state.leadSourceSelectionTouched = true;
-      if (state.selectedLeadSources.includes(id)) state.selectedLeadSources = state.selectedLeadSources.filter((item) => item !== id);
-      else state.selectedLeadSources = [...state.selectedLeadSources, id];
+      Object.assign(state, toggleLeadSourceSelection(state, id));
       renderLeadSourceChips();
     });
   });
@@ -9420,11 +9403,7 @@ function openLeadSourceCenter(focusId?: string) {
 }
 
 function refreshLeadSourceCenter(providers?: LeadProviderStatus[]) {
-  if (providers) state.leadProviders = providers;
-  if (!state.leadSourceSelectionTouched) {
-    // AI 搜索按 token 计费，默认不自动勾选，由用户按需开启
-    state.selectedLeadSources = state.leadProviders.filter((item) => item.ready && item.enabled && item.id !== "ai_search").map((item) => item.id);
-  }
+  Object.assign(state, refreshLeadSourceProviders(state, providers || state.leadProviders));
   renderLeadSourceChips();
   const modal = qs<HTMLElement>("#appModal");
   if (modal?.classList.contains("active")) {
@@ -9448,12 +9427,8 @@ async function saveLeadSourceConfig(providerId: string, button?: HTMLButtonEleme
   const original = button?.textContent || "";
   if (button) { button.disabled = true; button.textContent = "保存中"; }
   try {
-    const result = await api<{ providers: LeadProviderStatus[] }>("/api/lead-finder/source-config", {
-      method: "POST",
-      body: JSON.stringify({ provider: providerId, apiKey: key, enabled: true })
-    });
-    state.leadSourceSelectionTouched = true;
-    if (!state.selectedLeadSources.includes(providerId)) state.selectedLeadSources = [...state.selectedLeadSources, providerId];
+    const result = await leadSourceCenterClient.saveConfig(providerId, key);
+    Object.assign(state, markLeadSourceSelected(state, providerId));
     refreshLeadSourceCenter(result.providers);
     toast(`已保存并启用：${provider?.name || providerId}`);
   } catch (error) {
@@ -9473,12 +9448,9 @@ async function testLeadSourceConfig(providerId: string, button?: HTMLButtonEleme
   try {
     // 若填了新 key，先静默保存再测试，保证“填上 key 就能测通”
     if (provider?.requiresKey && key) {
-      await api("/api/lead-finder/source-config", { method: "POST", body: JSON.stringify({ provider: providerId, apiKey: key, enabled: true }) });
+      await leadSourceCenterClient.saveConfig(providerId, key);
     }
-    const result = await api<{ ok: boolean; message: string; usage: string; providers: LeadProviderStatus[] }>("/api/lead-finder/source-config/test", {
-      method: "POST",
-      body: JSON.stringify({ provider: providerId })
-    });
+    const result = await leadSourceCenterClient.testConfig(providerId);
     refreshLeadSourceCenter(result.providers);
     toast(result.message + (result.usage ? ` · ${result.usage}` : ""), result.ok ? "ok" : "error");
   } catch (error) {
@@ -9492,8 +9464,8 @@ async function deleteLeadSourceConfig(providerId: string, button?: HTMLButtonEle
   if (!providerId) return;
   if (button) { button.disabled = true; button.textContent = "清除中"; }
   try {
-    const result = await api<{ providers: LeadProviderStatus[] }>(`/api/lead-finder/source-config/${encodeURIComponent(providerId)}`, { method: "DELETE" });
-    state.selectedLeadSources = state.selectedLeadSources.filter((item) => item !== providerId);
+    const result = await leadSourceCenterClient.deleteConfig(providerId);
+    Object.assign(state, removeLeadSourceSelection(state, providerId));
     refreshLeadSourceCenter(result.providers);
     toast("已清除该数据源的 API Key");
   } catch (error) {
