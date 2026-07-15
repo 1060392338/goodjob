@@ -522,3 +522,40 @@
 - 证据：`docs/engineering/evidence/L-0012-secret-vault.md`。
 - R-012/R-013 进入 Verification：本地代码和门禁已完成，真实部署仍需备份恢复、迁移状态与密钥托管验证。
 - 下一循环 L-0013：从单一低耦合领域建立 Repository / Unit of Work 与 MySQL 增量持久化，不一次性重写 `CrmStore`。
+
+## 2026-07-15 — Loop L-0013：Repository / Unit of Work 与增量持久化
+
+### Orient / Select
+
+- 基线 Commit：`2f866cc`；分支：`codex/phase-1-route-modularization`。
+- 登记 `REQ-GJ-ARCH-002 / TASK-GJ-0007`，关联 R-005/R-011、ADR-0012 和阶段 2 数据边界门禁。
+- 只选择线索外联领域，禁止一次性重写 `CrmStore`；不改变公开 API，不连接真实 MySQL/SMTP。
+
+### Plan / Test-first
+
+- 定义 Repository 端口、Memory/MySQL Adapter、Unit of Work、唯一键回读、pending 乐观条件和租户谓词。
+- 首次专项测试按预期以 `ERR_MODULE_NOT_FOUND` 失败。
+- 实现后测试曾因正则将 `deleted_at` 误判为 `DELETE`；修正为只拒绝以 `DELETE/TRUNCATE` 开头的 SQL，产品断言未放宽。
+
+### Implement
+
+- 新增 `LeadOutreachRepository`、`PersistenceConflictError` 与 Memory Adapter。
+- 新增 MySQL Unit of Work，确保 commit/rollback/release。
+- 新增 MySQL Repository，使用参数化 SELECT/INSERT/UPDATE 和多表事务。
+- 外联服务在 Repository 成功后才同步内存状态；Repository 路径不调用 `store.persist()`。
+- `lead_outreach_requests` 退出 `persistAll` 快照替换。
+
+### Verify / Review
+
+- Repository 契约：Memory/MySQL PASS；MySQL commit 2、rollback 2、按行语句 21、全量快照写 0。
+- 外联路由：Repository commit 10、全量快照写 0，幂等/pending/回滚通过。
+- `npm run verify` PASS；API 167；tenant isolation 18。
+- `npm run test:e2e` PASS，37/37；`npm run audit:dependencies` PASS，0。
+- Review 确认 SQL 参数化、Owner/Team 条件、原始幂等 Key/邮件正文/SMTP 密钥不落库，真实外呼 0。
+
+### Record / Next
+
+- 实现 Commit：`a70359b`。
+- 证据：`docs/engineering/evidence/L-0013-repository-unit-of-work.md`。
+- R-005 仅部分缓解；其他领域仍需逐域迁移。
+- 下一循环 L-0014：AI 工作流 MySQL 状态、跨进程恢复、并发确认与 Effect 幂等。

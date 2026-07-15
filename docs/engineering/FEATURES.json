@@ -212,7 +212,7 @@
       "task": "TASK-GJ-0007",
       "title": "Introduce Repository and Unit of Work for incremental lead-outreach persistence",
       "phase": 2,
-      "status": "in_progress",
+      "status": "done",
       "priority": "P0",
       "acceptance": [
         "Lead outreach domain depends on a repository port rather than the MySQL driver",
@@ -248,10 +248,13 @@
         "currentSlice": {
           "loop": "L-0013",
           "scope": "Lead outreach Repository, Unit of Work, and row-level MySQL persistence",
-          "status": "in_progress",
-          "baselineCommit": "2f866cc"
+          "status": "done",
+          "baselineCommit": "2f866cc",
+          "deliveryCommit": "a70359b",
+          "verification": "PASS: memory/mysql repository contract; 21 row-level statements; MySQL commit 2/rollback 2; route repository commits 10; full snapshot writes 0; API 167; tenant 18; verify; E2E 37/37; audit 0"
         }
-      }
+      },
+      "completedAt": "2026-07-15"
     },
     {
       "id": "REQ-GJ-AI-001",

@@ -8,7 +8,7 @@
 | R-002 | 原仓库无 `.gitignore`，依赖、环境文件和运行缓存可能误提交 | High | Mitigated | 已新增 `.gitignore` 与仓库安全检查；远端 CI 待实跑 | 阶段 0 |
 | R-003 | Windows 下测试与 E2E 脚本使用 Unix 环境变量语法 | High | Mitigated | 已使用 `cross-env`，Windows 本地验证通过；Linux 由 GitHub Actions 待验证 | 阶段 0 |
 | R-004 | 后端 `server.ts` 与前端 `prototype-api.ts` 文件过大，修改影响面和冲突风险高 | High | Mitigating | ADR-0005/0009 规定渐进拆分；L-0004~L-0009 已迁移后端 30 个 API 并建立外部边界；L-0010 提取首个前端来源中心类型/状态/API 模块，`prototype-api.ts` 11745→11717；后续继续视图/控制器与 Repository 边界 | 阶段 2 |
-| R-005 | MySQL Store 具有原型阶段全量持久化特征，扩展性与数据竞争风险高 | High | Open | 设计正式迁移与按表/按行增量持久化；恢复演练 | 阶段 2 |
+| R-005 | MySQL Store 具有原型阶段全量持久化特征，扩展性与数据竞争风险高 | High | Mitigating | L-0013 已将线索外联请求及完成事务迁入 Repository/Unit of Work，并将 `lead_outreach_requests` 移出快照替换；其他领域仍使用 `persistAll`，需逐域迁移和真实 MySQL 恢复演练 | 阶段 2 |
 | R-006 | AI/网页采集可能造成敏感数据泄漏、提示注入或不合规采集 | Critical | Open | L-0008/L-0009 已完成模型和线索来源调用的 SSRF 拒绝、密钥脱敏与统一边界；仍需来源白名单、采集许可、恶意内容隔离、Prompt 注入防护、审计和人工确认 | 阶段 1/3/4 |
 | R-007 | WhatsApp/Twilio/Puppeteer 等依赖安装包含大型浏览器下载，影响 CI 可重复性 | Medium | Open | CI 跳过非必要 Puppeteer 下载；WhatsApp 独立可选运行时 | 阶段 2 |
 | R-008 | 前端主包约 1.394 MB，首屏和维护性存在风险 | Medium | Open | L-0010 只做结构拆分，生产构建仍约 1.394 MB；后续建立性能基线并按模块动态拆包，工作簿能力评估按需加载 | 阶段 2/7 |
