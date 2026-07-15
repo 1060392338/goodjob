@@ -664,3 +664,37 @@
 - 证据：`docs/engineering/evidence/L-0016-phase-2-acceptance.md`。
 - 阶段 2：Accepted with carry-over；持续风险和转移项保持原状态。
 - 下一循环 L-0017：阶段 3 获客数据管道基础与统一接入契约。
+
+
+## 2026-07-15 — Loop L-0017：统一获客数据管道基础
+
+### Discover / Register
+
+- 登记 `REQ-GJ-LEAD-001 / TASK-GJ-0201`，关联 ADR-0016 与 R-015。
+- 明确本循环只建立 Connector 无关基础，不接真实供应商、不改公开 API/数据表。
+
+### Test-first
+
+- 首次专项测试因 `lead-ingestion-pipeline.js` 不存在而按预期失败。
+- 测试先锁定规范化、稳定键、逐记录检查点、故障恢复、重复写入 0、Secret 拒绝和 CRM 血缘映射。
+
+### Implement
+
+- 实现 `LeadIngestionPipeline`、Connector/Sink/Checkpoint Store 契约。
+- 固定 `lead-normalizer/v1` 与 `leadrec_*` 确定性记录键。
+- checkpoint 绑定 job/owner/team/source/provider/version，错误上下文失败关闭。
+- 新增 CRM Sink，复用现有来源血缘与幂等写入。
+
+### Verify / Review
+
+- 专项 PASS：normalized fields 7、persisted 2、resumed true、duplicate writes 0、Secret rejected、真实外呼 0。
+- `npm run verify` PASS；repository security 158；API 167；tenant isolation 18；frontend self-test 44；Bundle Budget PASS。
+- `npm run audit:dependencies` PASS，0 vulnerabilities。
+- `npm run test:e2e` PASS，37/37。
+
+### Record / Next
+
+- 实现 Commit：`308cb67`。
+- 证据：`docs/engineering/evidence/L-0017-lead-ingestion-pipeline.md`。
+- R-015 保持 Mitigating；真实样本与供应商验收留待后续。
+- 下一循环 L-0018：CSV/Excel Connector 接入统一管道。

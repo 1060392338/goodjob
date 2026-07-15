@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0017",
+  "currentIteration": "L-0018",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -494,7 +494,15 @@
         "docs/engineering/adr/ADR-0008-lead-source-connector-boundary.md",
         "docs/engineering/adr/ADR-0016-lead-ingestion-pipeline.md"
       ],
-      "note": "L-0009 完成配置与连接测试前置边界；L-0017 正在建立统一标准化、血缘、去重、检查点和失败恢复契约。CSV/Excel、网页/搜索、第三方 API 的具体 Connector 分别由 L-0018~L-0020 交付。"
+      "note": "L-0009 完成配置与连接测试前置边界；L-0017 已完成统一标准化、血缘、稳定键、幂等 Sink 和检查点失败恢复契约。当前进入 L-0018 CSV/Excel Connector；网页/搜索和第三方 API 分别由 L-0019/L-0020 交付。",
+      "increments": [
+        {
+          "loop": "L-0017",
+          "status": "done",
+          "deliveryCommit": "308cb67",
+          "verification": "PASS: 7 normalized fields; deterministic record key; per-record checkpoint; interrupted resume; duplicate writes 0; Secret rejection; CRM lineage sink mapping; real outbound calls 0; verify; API 167; tenant 18; audit 0; E2E 37/37"
+        }
+      ]
     },
     {
       "id": "REQ-GJ-AI-LEAD-001",
