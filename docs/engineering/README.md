@@ -1,6 +1,6 @@
-﻿# GoodJob 工程治理索引
+# GoodJob 工程治理索引
 
-更新时间：2026-07-13
+更新时间：2026-07-15
 
 ## 使用方式
 
@@ -38,3 +38,15 @@
 - `done`：DoD 与证据链全部满足。
 
 禁止使用“差不多完成”“基本完成”等不可验证状态。
+
+## 状态信息优先级
+
+开发续作发生冲突时，按以下顺序判断：
+
+1. `git status` 与实际代码/测试；
+2. `HANDOFF.md` 的当前会话检查点；
+3. `PROJECT_STATUS.md` 与 `FEATURES.json`；
+4. `IMPLEMENTATION_LOG.md`、`TRACEABILITY.md`、Evidence 与 ADR；
+5. 根目录 `DEVELOPMENT_STATUS.md` 仅为历史业务基线快照，不代表当前阶段进度。
+
+任何文档与代码不一致都应先登记并修正文档，禁止依据旧状态继续宣称完成。

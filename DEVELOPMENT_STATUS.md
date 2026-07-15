@@ -1,5 +1,8 @@
 # GoodJob CRM 开发状态
 
+> [!IMPORTANT]
+> 本文件是早期 CRM 业务基线快照，**不是当前开发阶段的权威状态**。
+> 当前阶段、未提交工作、验收门禁和下一步请以 `docs/engineering/HANDOFF.md`、`docs/engineering/PROJECT_STATUS.md`、`docs/engineering/FEATURES.json` 为准。
 ## 已完成
 
 - 前后端分离工程：
