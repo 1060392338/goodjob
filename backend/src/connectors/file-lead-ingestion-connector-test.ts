@@ -72,7 +72,7 @@ for (const [fileName, bytes] of [["leads.csv", csv], ["leads.xlsx", xlsx], ["lea
 
 const connector = new FileLeadIngestionConnector({ fileName: "leads.xlsx", bytes: xlsx, mapping, batchId: "batch-resume", pageSize: 1 });
 const context: LeadIngestionContext = {
-  jobId: "file-job-1", ownerId: "owner-1", teamId: "team-1", sourceType: "excel",
+  jobId: "file-job-1", ownerId: "owner-1", teamId: "team-1", sourceType: "import",
   sourceChannel: "file-import", sourceCampaign: "phase-3"
 };
 const persisted = new Map<string, string>();
@@ -81,7 +81,7 @@ let failSecondOnce = true;
 const sink: LeadIngestionSink = {
   async ingest(record) {
     sinkCalls += 1;
-    if (record.externalId.endsWith(":3") && failSecondOnce) {
+    if (record.company === "Beta Trading" && failSecondOnce) {
       failSecondOnce = false;
       throw new Error("simulated row persistence failure");
     }
@@ -95,7 +95,7 @@ const checkpoints = new InMemoryLeadIngestionCheckpointStore();
 const interrupted = await pipeline.run({ context, connector, sink, checkpoints });
 assert.equal(interrupted.status, "interrupted");
 assert.equal(interrupted.created, 1);
-assert.equal(interrupted.failures[0]?.externalId?.endsWith(":3"), true);
+assert.equal(interrupted.failures[0]?.externalId, "ext-2");
 const resumed = await pipeline.run({ context, connector, sink, checkpoints });
 assert.equal(resumed.status, "completed");
 assert.equal(resumed.created, 1);

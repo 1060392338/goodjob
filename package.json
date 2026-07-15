@@ -19,7 +19,8 @@
   },
   "workspaces": [
     "backend",
-    "frontend"
+    "frontend",
+    "packages/workbook-security"
   ],
   "devDependencies": {
     "concurrently": "^9.2.1",

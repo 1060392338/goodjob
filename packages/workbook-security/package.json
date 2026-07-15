@@ -11,5 +11,7 @@
   },
   "dependencies": {
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
-  }
+  },
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts"
 }
