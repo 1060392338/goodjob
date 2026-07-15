@@ -12,14 +12,16 @@
     "provision:beta-admins": "tsx src/provision-beta-admins.ts",
     "test": "cross-env NODE_ENV=test tsx src/self-test.ts",
     "test:security": "cross-env NODE_ENV=test JWT_SECRET=goodjob-security-test-secret-at-least-32-characters tsx src/security-test.ts",
-    "test:routes": "npm run test:routes:core && npm run test:routes:customers && npm run test:routes:leads && npm run test:routes:lead-outreach && npm run test:routes:lead-conversion && npm run test:gateway:model && npm run test:routes:ai-config",
+    "test:routes": "npm run test:routes:core && npm run test:routes:customers && npm run test:routes:leads && npm run test:routes:lead-outreach && npm run test:routes:lead-conversion && npm run test:gateway:model && npm run test:routes:ai-config && npm run test:connector:lead-source && npm run test:routes:lead-source-config",
     "test:routes:core": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/routes-test.ts",
     "test:routes:customers": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/customer-routes-test.ts",
     "test:routes:leads": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/lead-routes-test.ts",
     "test:routes:lead-outreach": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/lead-outreach-routes-test.ts",
     "test:routes:lead-conversion": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/lead-conversion-routes-test.ts",
     "test:gateway:model": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/gateways/model-gateway-test.ts",
-    "test:routes:ai-config": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/ai-config-routes-test.ts"
+    "test:routes:ai-config": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/ai-config-routes-test.ts",
+    "test:connector:lead-source": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/connectors/lead-source-connector-test.ts",
+    "test:routes:lead-source-config": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/lead-source-config-routes-test.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

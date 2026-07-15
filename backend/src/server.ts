@@ -10,13 +10,15 @@ import { canManageAccount, canManageAccounts, canManageRole, canSeeOwner, canSee
 import { asyncRoute } from "./http/async-route.js";
 import { nodemailerOutboundEmailGateway, outboundEmailError, type OutboundEmailReceipt } from "./gateways/outbound-email-gateway.js";
 import { httpModelGateway } from "./gateways/model-gateway.js";
+import { leadSourceConnector } from "./connectors/lead-source-connector.js";
 import { customerWithPipeline } from "./domain/customers/customer-service.js";
 import { getAiConfig } from "./domain/ai/ai-config-service.js";
 import { createDealEvent } from "./domain/deals/deal-service.js";
 import { createLeadFromSource } from "./domain/leads/lead-service.js";
+import { getLeadSourceConfig } from "./domain/leads/lead-source-config-service.js";
 import { createMysqlStore } from "./mysql-store.js";
 import { getStore, setStore } from "./store.js";
-import { LEAD_PROVIDERS, getProvider, providerMeta, type LeadProvider, type LeadQuery, type RawLead } from "./lead-providers.js";
+import { LEAD_PROVIDERS, type LeadQuery, type RawLead } from "./lead-providers.js";
 import { assertPublicHttpUrl, fetchPublicUrl } from "./outbound-security.js";
 import { registerSwagger } from "./swagger.js";
 import { registerAiConfigRoutes } from "./routes/ai-config-routes.js";
@@ -24,10 +26,11 @@ import { registerAuthRoutes } from "./routes/auth-routes.js";
 import { registerCustomerRoutes } from "./routes/customer-routes.js";
 import { registerLeadRoutes } from "./routes/lead-routes.js";
 import { registerLeadOutreachRoutes } from "./routes/lead-outreach-routes.js";
+import { registerLeadSourceConfigRoutes } from "./routes/lead-source-config-routes.js";
 import { registerLeadConversionRoutes } from "./routes/lead-conversion-routes.js";
 import { registerSystemRoutes } from "./routes/system-routes.js";
 import { assertRuntimeConfiguration } from "./runtime-config.js";
-import type { AiModelConfig, CommissionCalculation, CommissionItem, CommissionProduct, CommissionRule, Customer, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, Lead, LeadSourceConfig, LeadSourceEvent, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, SalesRecordAudit, SessionUser, Todo, TradeDocument, TradeDocumentAudit, TradeDocumentSendRecord, WebsiteOpportunity } from "./types.js";
+import type { AiModelConfig, CommissionCalculation, CommissionItem, CommissionProduct, CommissionRule, Customer, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, Lead, LeadSourceEvent, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, SalesRecordAudit, SessionUser, Todo, TradeDocument, TradeDocumentAudit, TradeDocumentSendRecord, WebsiteOpportunity } from "./types.js";
 
 function loadLocalEnv() {
   const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -4386,6 +4389,7 @@ app.patch("/api/prospect-list/batch", requireAuth, asyncRoute(async (req, res) =
 }));
 
 registerAiConfigRoutes(app, { modelGateway: httpModelGateway });
+registerLeadSourceConfigRoutes(app, { connector: leadSourceConnector });
 
 const leadFinderSearchSchema = z.object({
   productKeywords: z.string().default(""),
@@ -4419,163 +4423,8 @@ app.post("/api/lead-finder/free-search", requireAuth, asyncRoute(async (req, res
 }));
 
 // ---------------------------------------------------------------------------
-// 自动获客 · 数据源中心（Provider 注册表 + 用户 Key 配置 + 统一搜索）
+// 自动获客 · 数据源统一搜索（配置路由已由 LeadSourceConnector 模块装配）
 // ---------------------------------------------------------------------------
-
-function getLeadSourceConfig(user: SessionUser, provider: string): LeadSourceConfig | undefined {
-  return getStore().leadSourceConfigs.find((item) => item.provider === provider && item.ownerId === user.id);
-}
-
-function publicLeadSourceConfig(config: LeadSourceConfig) {
-  return {
-    id: config.id,
-    provider: config.provider,
-    scope: config.scope,
-    apiKey: config.apiKey ? `****${config.apiKey.slice(-4)}` : "",
-    hasApiKey: Boolean(config.apiKey),
-    baseUrl: config.baseUrl || "",
-    enabled: config.enabled,
-    lastTestAt: config.lastTestAt || "",
-    lastTestStatus: config.lastTestStatus || "untested",
-    lastTestMessage: config.lastTestMessage || "",
-    usage: config.usageJson || "",
-    updatedAt: config.updatedAt
-  };
-}
-
-function providerStatusFor(user: SessionUser, provider: LeadProvider) {
-  const config = getLeadSourceConfig(user, provider.id);
-  const hasKey = !provider.requiresKey || Boolean(config?.apiKey);
-  const enabled = provider.requiresKey ? Boolean(config?.enabled && config?.apiKey) : config ? config.enabled : true;
-  return {
-    ...providerMeta(provider),
-    hasApiKey: Boolean(config?.apiKey),
-    ready: hasKey,
-    enabled,
-    lastTestStatus: config?.lastTestStatus || (provider.requiresKey ? "untested" : "passed"),
-    lastTestMessage: config?.lastTestMessage || "",
-    lastTestAt: config?.lastTestAt || "",
-    usage: config?.usageJson || ""
-  };
-}
-
-// AI 搜索作为一种数据源：不需要独立 API Key，直接复用「AI 模型配置」里已启用且勾选自动获客的模型
-function aiSearchStatus(user: SessionUser) {
-  const config = getAiConfig(user, "leadFinder");
-  const ready = Boolean(config?.enabled && config?.apiKey && config?.useLeadFinder);
-  return {
-    id: "ai_search",
-    name: "AI 搜索",
-    tier: "ai" as const,
-    category: "ai" as const,
-    requiresKey: false,
-    capabilities: ["ai", "company"],
-    docsUrl: "",
-    keyHint: "使用「AI 模型配置」中已启用并勾选自动获客的模型，无需在此另填 Key。",
-    defaultBaseUrl: "",
-    costNote: "调用你配置的 AI 模型直接生成候选公司，结果需人工核实。",
-    hasApiKey: ready,
-    ready,
-    enabled: ready,
-    lastTestStatus: ready ? "passed" : "untested",
-    lastTestMessage: ready ? `当前模型：${config?.model || "已配置"}` : "请先在「AI 模型配置」启用模型并勾选“自动获客”",
-    lastTestAt: config?.lastTestAt || "",
-    usage: ""
-  };
-}
-
-function allProviderStatuses(user: SessionUser) {
-  return [aiSearchStatus(user), ...LEAD_PROVIDERS.map((provider) => providerStatusFor(user, provider))];
-}
-
-app.get("/api/lead-finder/providers", requireAuth, (req, res) => {
-  res.json({ providers: allProviderStatuses(req.user!) });
-});
-
-app.post("/api/lead-finder/source-config", requireAuth, asyncRoute(async (req, res) => {
-  const schema = z.object({
-    provider: z.string().min(1).max(40),
-    apiKey: z.string().max(400).optional().default(""),
-    baseUrl: z.string().max(255).optional().default(""),
-    enabled: z.boolean().optional().default(false)
-  });
-  const body = schema.parse(req.body);
-  const provider = getProvider(body.provider);
-  if (!provider) {
-    res.status(404).json({ message: "未知数据源" });
-    return;
-  }
-  if (body.baseUrl) await assertPublicHttpUrl(body.baseUrl);
-  const store = getStore();
-  const existing = getLeadSourceConfig(req.user!, body.provider);
-  const apiKey = body.apiKey && !body.apiKey.includes("****") ? body.apiKey : existing?.apiKey || "";
-  if (provider.requiresKey && body.enabled && !apiKey) {
-    res.status(400).json({ message: "启用前请先填写该数据源的 API Key" });
-    return;
-  }
-  const config: LeadSourceConfig = {
-    id: existing?.id || `ls_${provider.id}_${req.user!.id}_${Date.now()}`,
-    provider: provider.id,
-    scope: "personal",
-    apiKey,
-    baseUrl: body.baseUrl || existing?.baseUrl || "",
-    enabled: body.enabled,
-    lastTestAt: existing?.lastTestAt,
-    lastTestStatus: existing?.lastTestStatus || "untested",
-    lastTestMessage: existing?.lastTestMessage || "",
-    usageJson: existing?.usageJson,
-    ownerId: req.user!.id,
-    teamId: req.user!.teamId,
-    updatedAt: new Date().toISOString()
-  };
-  if (existing) Object.assign(existing, config);
-  else store.leadSourceConfigs.unshift(config);
-  await store.persist();
-  res.json({ config: publicLeadSourceConfig(config), providers: allProviderStatuses(req.user!) });
-}));
-
-app.post("/api/lead-finder/source-config/test", requireAuth, asyncRoute(async (req, res) => {
-  const schema = z.object({ provider: z.string().min(1).max(40) });
-  const body = schema.parse(req.body);
-  const provider = getProvider(body.provider);
-  if (!provider) {
-    res.status(404).json({ message: "未知数据源" });
-    return;
-  }
-  const store = getStore();
-  const config = getLeadSourceConfig(req.user!, provider.id);
-  if (provider.requiresKey && !config?.apiKey) {
-    res.status(400).json({ message: "请先保存该数据源的 API Key，再测试连接" });
-    return;
-  }
-  let result;
-  try {
-    result = await provider.test({ apiKey: config?.apiKey || "", baseUrl: config?.baseUrl });
-  } catch (error) {
-    result = { ok: false, message: `连接异常：${error instanceof Error ? error.message : "未知错误"}` };
-  }
-  if (config) {
-    config.lastTestAt = new Date().toISOString();
-    config.lastTestStatus = result.ok ? "passed" : "failed";
-    config.lastTestMessage = result.message;
-    if (result.usage) config.usageJson = result.usage;
-    config.updatedAt = new Date().toISOString();
-    await store.persist();
-  }
-  res.json({ ok: result.ok, message: result.message, usage: result.usage || "", providers: allProviderStatuses(req.user!) });
-}));
-
-app.delete("/api/lead-finder/source-config/:provider", requireAuth, asyncRoute(async (req, res) => {
-  const store = getStore();
-  const index = store.leadSourceConfigs.findIndex((item) => item.provider === req.params.provider && item.ownerId === req.user!.id);
-  if (index < 0) {
-    res.status(404).json({ message: "配置不存在或无权删除" });
-    return;
-  }
-  store.leadSourceConfigs.splice(index, 1);
-  await store.persist();
-  res.json({ providers: allProviderStatuses(req.user!) });
-}));
 
 const leadSearchSchema = z.object({
   goal: z.string().default(""),
