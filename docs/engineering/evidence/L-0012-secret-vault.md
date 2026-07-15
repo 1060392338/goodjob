@@ -1,10 +1,10 @@
-﻿# L-0012 证据：SecretVault 与凭证迁移安全
+# L-0012 证据：SecretVault 与凭证迁移安全
 
 - 日期：2026-07-15
 - 关联：`REQ-GJ-SEC-003 / TASK-GJ-0006`
 - ADR：`ADR-0011`
 - 基线 Commit：`9a900a5`
-- 状态：实施与本地验收进行中
+- 状态：本地 DoD 完成
 
 ## 范围
 
@@ -23,7 +23,14 @@
 
 ## 专项验收
 
-待完整门禁完成后填写最终计数和 Commit。
+- 实现 Commit：`a3e2dcc`；
+- `npm run test:vault --workspace backend`：PASS；
+- `npm run verify`：PASS；
+- `npm run test:security`：PASS，OpenAPI 167，跨模块租户隔离 18；
+- `npm run test:e2e`：PASS，37/37；
+- `npm run audit:dependencies`：PASS，0 vulnerabilities；
+- `npm run test:repo-security`：PASS，暂存后 135 个文件；
+- `git diff --cached --check`：PASS。
 
 ## 安全事实
 

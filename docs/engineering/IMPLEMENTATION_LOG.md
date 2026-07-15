@@ -477,3 +477,48 @@
 - 证据：`docs/engineering/evidence/L-0011-ai-workflow-engine.md`。
 - `REQ-GJ-AI-ORCH-001 / TASK-GJ-0102` 本地 DoD 完成；阶段 2 继续 `in_progress`，阶段 4/5 仍未开始功能交付。
 - 下一循环建议 L-0012：建立模型/来源凭证 `SecretVault` 边界与迁移策略，先缓解 R-012/R-013，再把 `AiWorkflowEngine` 接入真实线索评分预览/确认 API；不得在明文 Key 风险关闭前接真实凭证。
+
+## 2026-07-15 — Loop L-0012：SecretVault 与凭证迁移安全
+
+### Orient / Select
+
+- 基线 Commit：`9a900a5`；分支：`codex/phase-1-route-modularization`。
+- 登记 `REQ-GJ-SEC-003 / TASK-GJ-0006`，关联 R-012/R-013、ADR-0011 和阶段 2 安全前置门禁。
+- 范围只包含模型/来源凭证加密、迁移、轮换、吊销、掩码和生产启动门禁。
+- 排除真实云 KMS、真实模型/来源凭证、新公开 API 和前端页面。
+
+### Plan / DoR
+
+- 建立可注入 `SecretVault`，当前 Adapter 使用 AES-256-GCM，AAD 必须绑定凭证类型、记录、Owner 和 Team。
+- MySQL 中模型与来源 Key 不得新增明文；历史明文必须可按批次迁移并从检查点恢复。
+- 损坏密文、未知 Key、跨租户上下文和配置错误必须失败关闭，不允许回退成明文。
+- 轮换必须支持新主 Key 重加密和旧 Key 过渡解密；移除旧 Key 后构成吊销。
+- 回滚必须保留数据库兼容性证据，禁止把明文凭证导出到普通文件。
+
+### Implement
+
+- 新增 `backend/src/security/secret-vault.ts` 和 `credential-secret-storage.ts`，统一加密、解密、密文识别、掩码与错误分类。
+- 密文格式为 `gjsec:v1:<keyId>:<iv>:<authTag>:<ciphertext>:gcm`；随机 IV，认证标签和 AAD 共同防篡改与跨上下文解密。
+- `ai_model_configs.api_key` 与 `lead_source_configs.api_key` 只写密文，读取时在准确上下文中解密，公开返回保持尾四位掩码。
+- 新增 `credential_secret_migrations`，记录状态、当前表/记录、迁移/轮换/校验计数、失败分类和时间。
+- 每批 100 条；使用 MySQL `GET_LOCK` 防并发迁移，并以旧值条件更新防止覆盖并发写入。
+- 启动时迁移明文、轮换旧 Key、重新校验已完成数据；损坏密文或未知 Key 直接拒绝启动。
+- 新增生产环境主密钥和过渡解密密钥配置门禁；MySQL 模式缺少主 Key 时拒绝启动。
+
+### Verify / Review
+
+- Test first：首次专项测试因 `secret-vault.js` 不存在以 `ERR_MODULE_NOT_FOUND` 失败；未删除、跳过或放宽测试。
+- 接入 MySQL 后首次构建因查询助手不支持第三个参数失败；改为参数化查询后通过。
+- `npm run test:vault --workspace backend`：PASS，覆盖加密、上下文隔离、篡改、迁移、重复迁移、轮换、吊销、掩码、MySQL 映射和生产门禁。
+- `npm run verify`：PASS；API 167，跨模块租户隔离 18。
+- `npm run test:e2e`：PASS，37/37。
+- `npm run audit:dependencies`：PASS，0 vulnerabilities。
+- 暂存后 `npm run test:repo-security`：PASS，135 files；`git diff --cached --check`：PASS。
+- Review 确认真实模型、来源和云 KMS 外呼均为 0；明文失败降级被禁止。
+
+### Record / Next
+
+- 实现 Commit：`a3e2dcc`。
+- 证据：`docs/engineering/evidence/L-0012-secret-vault.md`。
+- R-012/R-013 进入 Verification：本地代码和门禁已完成，真实部署仍需备份恢复、迁移状态与密钥托管验证。
+- 下一循环 L-0013：从单一低耦合领域建立 Repository / Unit of Work 与 MySQL 增量持久化，不一次性重写 `CrmStore`。

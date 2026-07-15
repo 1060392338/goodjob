@@ -39,7 +39,7 @@
 
 - 阶段 0 的本地代码门禁已完成；远端 GitHub 历史扫描、Actions 和部署凭证轮换仍在验证。
 - 阶段 1 已由现有 self-test、security test、167 个 OpenAPI 操作和 37 条 E2E 建立首版行为基线。
-- 当前处于阶段 2：后端 30 个 API、外部 Gateway/Connector、首个前端领域模块和 `AiWorkflowEngine` 编排技术验证已完成；Repository/Unit of Work、凭证安全、MySQL 工作流状态和前端剩余模块仍待完成。`REQ-GJ-AI-ORCH-001 / TASK-GJ-0102` 只形成阶段 4/5 前置边界，不代表 AI 功能阶段已完成。
+- 当前处于阶段 2：后端 30 个 API、外部 Gateway/Connector、首个前端领域模块和 `AiWorkflowEngine` 编排技术验证已完成；SecretVault 凭证安全已完成本地 DoD；Repository/Unit of Work、MySQL 工作流状态和前端剩余模块仍待完成。`REQ-GJ-AI-ORCH-001 / TASK-GJ-0102` 只形成阶段 4/5 前置边界，不代表 AI 功能阶段已完成。
 
 ## 变更控制
 
