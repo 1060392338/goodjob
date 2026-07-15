@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0014",
+  "currentIteration": "L-0015",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -261,7 +261,7 @@
       "task": "TASK-GJ-0103",
       "title": "Persist LangGraph workflow state, approvals, effects, and audit in MySQL",
       "phase": 2,
-      "status": "in_progress",
+      "status": "done",
       "priority": "P0",
       "acceptance": [
         "A second engine instance can recover an awaiting workflow from MySQL",
@@ -298,10 +298,13 @@
         "currentSlice": {
           "loop": "L-0014",
           "scope": "MySQL checkpoints, run/approval/effect/audit state, recovery, and concurrency idempotency",
-          "status": "in_progress",
-          "baselineCommit": "24e77bb"
+          "status": "done",
+          "baselineCommit": "24e77bb",
+          "deliveryCommit": "9ab50b1",
+          "verification": "PASS: 6 schema tables; cross-process recovery; concurrent approval effect once; decision conflict fail-closed; permission recheck; stable-key lease recovery; Secret rejection; API 167; tenant 18; verify; E2E 37/37; audit 0"
         }
-      }
+      },
+      "completedAt": "2026-07-15"
     },
     {
       "id": "REQ-GJ-AI-001",

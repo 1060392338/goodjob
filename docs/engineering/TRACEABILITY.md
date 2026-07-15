@@ -1,4 +1,4 @@
-# 需求追踪矩阵
+﻿# 需求追踪矩阵
 
 更新时间：2026-07-15
 
@@ -25,6 +25,7 @@ OBJ → REQ/NFR → ADR/DESIGN → TASK → PR/COMMIT → TEST → BUILD → REL
 | REQ-GJ-FE-001 | ADR-0009；风险 R-004/R-008；L-0010 证据 | TASK-GJ-0005 | Commit `487438b`；分支 `codex/phase-1-route-modularization` | 来源选择状态 8 组；4 个 API 客户端契约；self-test 41；API 167；tenant isolation 18；`verify`；audit 0；E2E 37/37 | Done |
 | REQ-GJ-AI-ORCH-001 | ADR-0010；风险 R-006/R-012/R-014；L-0011 证据 | TASK-GJ-0102 | Commit `356200a`；分支 `codex/phase-1-route-modularization` | 8 个工作流运行；暂停/恢复；确认/驳回/重跑；并发防重；权限复检；Secret 不入 checkpoint；Mock 外呼 0；API 167；tenant 18；`verify`；audit 0；E2E 37/37 | Done |
 | REQ-GJ-SEC-003 | ADR-0011；风险 R-012/R-013；L-0012 证据 | TASK-GJ-0006 | Commit `a3e2dcc`；分支 `codex/phase-1-route-modularization` | Vault 加密/上下文/篡改/迁移/轮换/吊销/掩码；API 167；tenant 18；`verify`；audit 0；E2E 37/37 | Done |
+| REQ-GJ-AI-PERSIST-001 | ADR-0013；风险 R-014；L-0014 证据 | TASK-GJ-0103 | Commit `9ab50b1`；分支 `codex/phase-1-route-modularization` | 6 表；跨实例恢复；并发 Effect 唯一；决策冲突失败关闭；权限复检；Secret 拒绝；API 167；tenant 18；`verify`；audit 0；E2E 37/37 | Done |
 | REQ-GJ-AI-001 | ADR-0002/0007；L-0008 仅建立前置传输边界 | TASK-GJ-0101 | 前置边界 Commit `9160a90` | 已覆盖三协议传输、脱敏、SSRF、超时和错误分类；Prompt/Schema 版本、用量、重试、审计仍未完成 | Backlog |
 | REQ-GJ-LEAD-001 | ADR-0003/0008；L-0009 仅建立配置与连接测试前置边界 | TASK-GJ-0201 | 前置边界 Commit `59594d1` | 已覆盖 Provider 注册、连接错误分类、脱敏、SSRF 与分页/检查点字段；完整标准化管道、重试、幂等和断点恢复仍未完成 | Backlog |
 | REQ-GJ-AI-LEAD-001 | ADR-0002 | TASK-GJ-0301 | 待开始 | 金标评测；注入防护 | Backlog |

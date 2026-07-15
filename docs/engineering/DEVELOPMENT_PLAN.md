@@ -1,4 +1,4 @@
-# GoodJob 正式开发阶段计划
+﻿# GoodJob 正式开发阶段计划
 
 更新时间：2026-07-15
 
@@ -39,7 +39,7 @@
 
 - 阶段 0 的本地代码门禁已完成；远端 GitHub 历史扫描、Actions 和部署凭证轮换仍在验证。
 - 阶段 1 已由现有 self-test、security test、167 个 OpenAPI 操作和 37 条 E2E 建立首版行为基线。
-- 当前处于阶段 2：后端 30 个 API、外部 Gateway/Connector、首个前端领域模块和 `AiWorkflowEngine` 编排技术验证已完成；SecretVault 凭证安全已完成本地 DoD；Repository/Unit of Work、MySQL 工作流状态和前端剩余模块仍待完成。`REQ-GJ-AI-ORCH-001 / TASK-GJ-0102` 只形成阶段 4/5 前置边界，不代表 AI 功能阶段已完成。
+- 当前处于阶段 2：后端 30 个 API、外部 Gateway/Connector、首个前端领域模块和 `AiWorkflowEngine` 编排技术验证已完成；SecretVault 凭证安全已完成本地 DoD；Repository/Unit of Work 与 MySQL 工作流状态已完成本地 DoD；当前进入前端动态分包，阶段收口仍待完成。`REQ-GJ-AI-ORCH-001 / TASK-GJ-0102` 只形成阶段 4/5 前置边界，不代表 AI 功能阶段已完成。
 
 ## 变更控制
 
@@ -54,3 +54,10 @@
 - 验收：Memory/MySQL 同契约、21 条按行 SQL、commit 2/rollback 2、全量快照写入 0、API 167、tenant 18、E2E 37/37、audit 0。
 - R-005 仅部分缓解，不把单领域迁移误报为全 Store 完成。
 - 下一切片 L-0014：AI 工作流 MySQL 状态、恢复与并发幂等；随后 L-0015 前端分包，L-0016 阶段 2 收口。
+
+## 阶段 2 当前增量：L-0014 / L-0015
+
+- L-0014 已完成：LangGraph MySQL Checkpointer、运行/审批/Effect/审计持久化、跨实例恢复、并发冲突和 Secret 拒绝；实现 Commit `9ab50b1`。
+- 当前 L-0015：以前端现有业务行为为基线，按页面/领域建立动态导入和稳定分包；不改业务流程，不以提高 warning 阈值冒充优化。
+- L-0015 验收必须同时满足：主入口显著下降；业务页面可独立 chunk；首屏不预加载工作簿等重依赖；构建有可重复的 bundle budget 门禁；self-test、security、API 167、tenant 18、E2E 37/37 不回归。
+- L-0016 将执行阶段 2 的完整追踪审计、风险复核、全量回归、验收和回顾；未完成的全 Store Repository 迁移或真实部署验证必须明确转入后续阶段，禁止混报完成。

@@ -1,4 +1,4 @@
-# 实施日志
+﻿# 实施日志
 
 ## 2026-07-13 — Loop L-0001：接管与工程 Harness
 
@@ -559,3 +559,36 @@
 - 证据：`docs/engineering/evidence/L-0013-repository-unit-of-work.md`。
 - R-005 仅部分缓解；其他领域仍需逐域迁移。
 - 下一循环 L-0014：AI 工作流 MySQL 状态、跨进程恢复、并发确认与 Effect 幂等。
+
+## 2026-07-15 — Loop L-0014：AI 工作流 MySQL 持久化、恢复与并发幂等
+
+### 目标
+
+把 L-0011 的 LangGraph 内存技术验证推进为可跨实例恢复、可审计和可防并发重复 Effect 的 MySQL 持久化底座。
+
+### Test-first
+
+- 首次专项测试因 `mysql-ai-workflow-persistence.js` 不存在而按预期失败。
+- 实现中测试发现空 checkpoint ID 处理和 TypeScript lib 兼容问题；修复实现/测试兼容性，没有删除门禁或放宽产品断言。
+
+### 已完成
+
+- 新增 ADR-0013 和六张 `ai_workflow_*` 表。
+- 实现 MySQL Checkpointer、运行摘要、唯一审批决策、审计和租约式 Effect Store。
+- 引擎支持持久化审计、重复 run 恢复、actor/tenant 校验和冲突决策失败关闭。
+- Secret 扫描覆盖 checkpoint、metadata、writes、run、approval、effect 和 audit。
+- MySQL Store 初始化接入工作流 schema；公开 API 数保持 167。
+
+### 验证
+
+- 专项：6 表、跨实例恢复、并发确认、冲突决策、权限复检、租约恢复和 Secret 拒绝全部通过，真实外呼 0。
+- `npm run verify`：PASS；API 167；tenant isolation 18；前端基线包 1,394.14 kB。
+- `npm run test:e2e`：PASS，37/37（3.5 分钟）。
+- `npm run audit:dependencies`：PASS，0 vulnerabilities。
+
+### Record / Next
+
+- 实现 Commit：`9ab50b1`。
+- 证据：`docs/engineering/evidence/L-0014-ai-workflow-mysql-persistence.md`。
+- R-014 保持 Mitigating，真实 MySQL 演练留待后续。
+- 下一循环 L-0015：前端模块化、动态导入、路由分包和 bundle budget。

@@ -1,4 +1,4 @@
-# 风险登记册
+﻿# 风险登记册
 
 更新时间：2026-07-15
 
@@ -17,6 +17,6 @@
 | R-011 | SMTP 超时或发送成功后最终持久化失败会留下结果不确定的 `pending` 外联请求，人工使用新键仍可能造成重复邮件 | High | Open | 发送前持久化 pending；相同键返回 409 且不自动重发；保存外部消息 ID；后续增加运维查询、人工确认、受控重试和告警 | 阶段 2/7 |
 | R-012 | 模型 API Key 在数据库、备份或错误路径中泄漏 | Critical | Verification | L-0012 已通过 SecretVault、AES-256-GCM、上下文绑定、检查点迁移、轮换/吊销和启动门禁消除新增明文落库；待真实部署完成备份恢复、迁移状态和密钥托管验证 | 阶段 2/4 |
 | R-013 | 线索来源 API Key 在数据库、备份或错误路径中泄漏 | Critical | Verification | L-0012 已通过同一 SecretVault 边界完成密文落库、迁移、轮换、吊销和租户上下文认证；待真实部署验证和供应商侧额度告警 | 阶段 2/3 |
-| R-014 | AI 工作流 Checkpoint、审批重放或幂等记录设计不当，可能持久化密钥、造成越权恢复或重复写入 | Critical | Mitigating | ADR-0010 要求 Checkpoint 禁止保存 API Key；恢复校验发起人；写入前权限复检；稳定幂等键；L-0011 仅使用 MemorySaver + Mock，正式 MySQL 表、事务、并发与崩溃恢复需独立 ADR/迁移演练 | 阶段 2/4/5 |
+| R-014 | AI 工作流 Checkpoint、审批重放或幂等记录设计不当，可能持久化密钥、造成越权恢复或重复写入 | Critical | Mitigating | L-0014/ADR-0013 已实现 6 张 MySQL 状态表、跨实例恢复、actor/tenant 校验、Effect 前权限复检、run/attempt 唯一决策、稳定幂等键/租约恢复和 Secret 拒绝；Fake Pool 并发/崩溃契约通过，仍需真实 MySQL 迁移、锁等待、断连与备份恢复演练 | 阶段 2/4/5 |
 
 任何 Critical 风险在关闭或正式签署接受前不得发布内部正式版。

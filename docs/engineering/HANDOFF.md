@@ -1,4 +1,4 @@
-# 会话交接
+﻿# 会话交接
 
 更新时间：2026-07-15
 
@@ -7,78 +7,54 @@
 - 仓库：`C:\Users\Administrator\Documents\Codex\2026-07-13\hi\GoodJob`
 - 分支：`codex/phase-1-route-modularization`
 - GitHub：`https://github.com/1060392338/goodjob.git`
-- L-0013 基线：`2f866cc`
-- L-0013 实现 Commit：`a70359b`
+- 当前完成 Commit：`9ab50b1`（L-0014 实现）
+- 当前 Loop：L-0015
 - 禁止推送 Gitee `origin`。
 
-## L-0013 已完成内容
+## L-0014 已完成内容
 
-1. 登记 `REQ-GJ-ARCH-002 / TASK-GJ-0007` 和 ADR-0012。
-2. 建立 `LeadOutreachRepository` 领域端口、Memory/MySQL Adapter 与 MySQL Unit of Work。
-3. 线索外联 pending、失败更新、社交完成、邮件完成改为参数化按行写入。
-4. 社交和邮件完成使用多表事务；失败 rollback、成功 commit、连接始终 release。
-5. 唯一键竞争回读现有请求；pending 条件更新防止重复完成。
-6. lead 更新带 ID/Owner/Team/未删除条件；user 更新带 ID/Team 条件。
-7. Repository 成功后才同步内存状态，失败时不污染 request/lead/user/activity。
-8. `lead_outreach_requests` 已退出旧 `persistAll` 快照替换。
-9. 未连接真实 MySQL、SMTP 或模型；真实外呼为 0。
+1. 登记 `REQ-GJ-AI-PERSIST-001 / TASK-GJ-0103` 与 ADR-0013。
+2. 建立符合 LangGraph `BaseCheckpointSaver` 的 MySQL Checkpointer。
+3. 新增 run/checkpoint/write/approval/effect/audit 六张表。
+4. 第二个 Engine 实例可恢复暂停工作流；重复 start 不重复调用模型。
+5. actor/tenant 恢复校验和业务 Effect 前权限复检保持有效。
+6. 同一 run/attempt 唯一决策；同决策可重放，不同决策抛 `decision_conflict`。
+7. Effect 使用稳定键、状态、结果回读和过期租约恢复；下游继续以相同 key 防重。
+8. 所有持久化面写前递归拒绝 Secret；SQL 参数化，无全表 DELETE/TRUNCATE/快照替换。
+9. 实现 Commit：`9ab50b1`；证据：`docs/engineering/evidence/L-0014-ai-workflow-mysql-persistence.md`。
 
-## 不得隐式改变的边界
-
-- GoodJob 原业务和当前页面仍是唯一基线，不进行 MVP 式推倒重写。
-- L-0013 只迁移线索外联，不得宣称整个 `CrmStore` Repository 化完成。
-- 其他领域仍使用 `persistAll`，R-005 保持 Mitigating。
-- `lead_outreach_requests` 不得重新放回 `DELETE + INSERT` 快照替换。
-- 邮件 pending 仍需后续运维查询、人工确认、受控重试和告警。
-- LangGraph.js 只负责编排；模型调用必须经过 `ModelGateway`。
-- 下一循环继续使用 Mock Gateway 和 Fake MySQL，不接真实凭证或生产数据。
-
-## L-0013 测试证据
+## 已通过门禁
 
 ```text
-npm run test:repository:lead-outreach --workspace backend  PASS
-  memory/mysql contract, row SQL 21, commit 2, rollback 2
-npm run test:routes:lead-outreach --workspace backend      PASS
-  repository commit 10, full snapshot write 0
-npm run verify                                             PASS
-npm run test:security                                      PASS，API 167，tenant 18
-npm run test:e2e                                           PASS，37/37
-npm run audit:dependencies                                 PASS，0 vulnerabilities
-npm run test:repo-security                                 PASS，135 tracked files
-真实 MySQL/SMTP/模型外呼                                  0
+npm run test:workflow:persistence --workspace backend  PASS
+npm run test:workflow:ai --workspace backend           PASS
+npm run verify                                         PASS
+npm run test:e2e                                       PASS，37/37（3.5 分钟）
+npm run audit:dependencies                             PASS，0
+API operations                                         167
+tenant isolation                                       18
+真实模型/MySQL/外部平台调用                            0
 ```
 
-完整 Test-first、事务、风险和回滚证据见 `docs/engineering/evidence/L-0013-repository-unit-of-work.md`。
+## 当前下一步：L-0015
 
-## GitHub 交付规则
+目标：前端模块化、动态导入、路由分包和主包性能门禁。
 
-仅推送 GitHub：
+执行顺序：
 
-```powershell
-git -c http.proxy=http://127.0.0.1:7897 `
-    -c https.proxy=http://127.0.0.1:7897 `
-    push github codex/phase-1-route-modularization
-```
-
-不得执行 `git push origin`。
-
-## 下一开发循环
-
-L-0014：AI 工作流 MySQL 状态、恢复与并发幂等。
-
-1. 先登记 REQ/TASK、ADR-0013、证据文件和 Test-first 失败。
-2. 建立正式 Workflow Persistence Port 与 MySQL Adapter。
-3. 持久化 workflow run、checkpoint、approval、effect、audit，不保存 API Key。
-4. 验证跨进程恢复、崩溃恢复、发起人和权限复检。
-5. 并发确认/重放只允许一次业务 Effect。
-6. 保持 API 167、tenant isolation 18、E2E 37/37 和 audit 0。
+1. 记录当前 bundle 文件、raw/gzip 大小和模块组成基线；
+2. Test-first 建立 bundle budget/路由 chunk 验收脚本；
+3. 按现有路由或页面注册方式引入 `React.lazy`/动态 import；
+4. 将工作簿、演示导出等重依赖移出首屏路径；
+5. 增加稳定 manual chunks，避免 vendor 与业务全部回到单主包；
+6. 运行 frontend self-test/build、完整 verify、37 条 E2E、audit；
+7. 更新 REQ/TASK/ADR/风险/证据/回滚并提交。
 
 ## 持续风险
 
-- R-004：`server.ts` 和 `prototype-api.ts` 仍需继续拆分。
-- R-005：仅线索外联完成增量持久化；其他领域仍使用 `persistAll`。
-- R-008：前端主包仍约 1.394 MB，L-0015 处理。
-- R-011：pending 邮件缺少运维处置界面。
-- R-012/R-013：真实部署仍需备份恢复、迁移状态和密钥托管验证。
-- R-014：正式 AI 工作流 MySQL 状态、事务、并发和崩溃恢复未完成，L-0014 处理。
+- R-005：其他旧领域仍可能使用 `persistAll`，L-0013 只完成线索外联切片。
+- R-008：当前前端主包约 1,394.14 kB / gzip 444.16 kB，L-0015 处理。
+- R-011：邮件 pending 运维处置界面未完成。
+- R-012/R-013：SecretVault 真实部署、备份恢复和托管验证未完成。
+- R-014：MySQL 契约已完成，但真实 MySQL 迁移、锁等待、断连和备份恢复演练仍需后续验证。
 - GitHub Actions、历史 Secret Scan、分支保护和部署凭证轮换尚未闭环。

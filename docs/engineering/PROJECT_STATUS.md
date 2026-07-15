@@ -1,4 +1,4 @@
-# 项目实施状态
+﻿# 项目实施状态
 
 更新时间：2026-07-15
 当前分支：`codex/phase-1-route-modularization`
@@ -38,29 +38,27 @@
 
 ## 当前循环
 
-**Loop L-0013：Repository / Unit of Work 与线索外联增量持久化——本地 DoD 完成**
+**Loop L-0014：AI 工作流 MySQL 持久化、恢复与并发幂等——本地 DoD 完成**
 
-- 关联：`REQ-GJ-ARCH-002 / TASK-GJ-0007`；实现 Commit：`a70359b`；设计：ADR-0012；
-- 契约：Memory/MySQL Adapter 使用同一测试集；
-- 事务：MySQL commit 2、rollback 2、连接始终 release；
-- 增量：专项测试记录 21 条按行 SQL，外联路由全量快照写入 0；
-- 并发：唯一键竞争回读，pending 条件更新，Owner/Team 租户条件；
+- 关联：`REQ-GJ-AI-PERSIST-001 / TASK-GJ-0103`；实现 Commit：`9ab50b1`；设计：ADR-0013；
+- 状态：6 张 `ai_workflow_*` 表，LangGraph Checkpointer、run、审批、Effect 与审计均可持久化；
+- 恢复：第二个 Engine 实例可恢复暂停工作流，重复 start 不重复调用模型；
+- 并发：同一 run/attempt 唯一决策，并发 Effect 使用稳定键和租约恢复；
+- 安全：actor/tenant 校验、Effect 前权限复检、所有持久化面 Secret 拒绝；
 - 回归：`verify` PASS、API 167、tenant isolation 18、audit 0、Playwright 37/37；
-- 外呼：真实 MySQL、SMTP、模型调用均为 0；
-- 限制：R-005 仅部分缓解，其他旧领域仍使用 `persistAll`；
-- 证据：`evidence/L-0013-repository-unit-of-work.md`。
+- 外呼：真实 MySQL、模型、协作平台调用均为 0；
+- 限制：R-014 仍需真实 MySQL 迁移、锁等待、断连和备份恢复演练；
+- 证据：`evidence/L-0014-ai-workflow-mysql-persistence.md`。
 
 ## 下一循环
 
-**L-0014：AI 工作流 MySQL 状态、恢复与并发幂等**
+**L-0015：前端模块化、动态导入、路由分包和主包性能门禁**
 
-1. 新增正式持久化端口和 MySQL Schema/迁移，不使用 MemorySaver 作为正式存储；
-2. 保存运行、审批、Effect、审计与 checkpoint，禁止 Secret 进入状态；
-3. 验证跨进程恢复、崩溃恢复、版本兼容和发起人/权限复检；
-4. 并发确认、重放和重试最多执行一次业务 Effect；
-5. 继续使用 Mock ModelGateway，不接真实模型、生产凭证或生产数据库；
-6. 保持 API 167、tenant isolation 18、E2E 37/37 和 audit 0。
-
+1. 冻结当前 1,394.14 kB / gzip 444.16 kB bundle 基线；
+2. Test-first 建立可重复的 bundle budget 与路由 chunk 断言；
+3. 按页面/领域动态导入，不改变现有 URL、权限和业务行为；
+4. 将工作簿和导出等重依赖移出首屏路径；
+5. 保持 API 167、tenant isolation 18、E2E 37/37 和 audit 0。
 ## 阻塞与持续风险
 
 - GitHub 仓库当前为 Public；是否调整为 Private 需由项目负责人确认。
@@ -69,6 +67,13 @@
 - `pending` 邮件尚无运维查询/人工确认界面。
 - R-012/R-013：代码和本地门禁已完成；真实部署仍需数据库备份/恢复、迁移状态和密钥托管验证，验证前继续禁止真实 Key。
 - R-005：线索外联已迁移，但其他领域仍可能通过旧 `persistAll` 产生全量覆盖风险。
-- R-014：正式工作流 MySQL 表、事务、并发、崩溃恢复和版本迁移未实现。
+- R-014：MySQL 契约已实现；真实 MySQL 迁移、锁等待、断连、版本迁移和备份恢复演练未完成。
 - 第三方线索数据厂商未指定；完整供应商验收无法开始。
 - 钉钉、企微、飞书当前只保留统一 Adapter 入口与 Mock 计划。
+
+## 阶段 2 当前增量：L-0014
+
+- 已完成 AI 工作流 MySQL checkpoint、run、审批、Effect 与审计持久化，Commit `9ab50b1`。
+- 验收：6 表、跨实例恢复、并发 Effect 唯一、决策冲突失败关闭、权限复检、Secret 拒绝、API 167、tenant 18、E2E 37/37、audit 0。
+- R-014 保持 Mitigating：真实 MySQL 迁移、锁等待、断连和备份恢复演练未完成。
+- 当前切片 L-0015：前端模块化、动态导入、路由分包和主包性能门禁；随后 L-0016 阶段 2 收口。
