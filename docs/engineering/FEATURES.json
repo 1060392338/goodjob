@@ -498,7 +498,7 @@
         "docs/engineering/adr/ADR-0017-csv-excel-lead-connector.md",
         "docs/engineering/adr/ADR-0018-public-web-search-connector.md"
       ],
-      "note": "L-0009 完成配置与连接测试前置边界；L-0017 完成统一标准化、血缘、稳定键、幂等 Sink 和检查点失败恢复；L-0018 完成 CSV/Excel Connector。当前进入 L-0019 公开网页/搜索安全 Connector；第三方 API 与阶段验收分别由 L-0020/L-0021 交付。",
+      "note": "L-0017 完成统一管道，L-0018 完成 CSV/Excel Connector。L-0019 已完成 ADR 与 Test-first/Red 检查点（603c664、3058c32），生产实现尚不存在；下一步按 ADR-0018 和专项测试实现安全网页/搜索 Connector。L-0020/L-0021 尚未开始。",
       "increments": [
         {
           "loop": "L-0017",
@@ -511,6 +511,15 @@
           "status": "done",
           "deliveryCommit": "db6c711",
           "verification": "PASS: CSV/XLSX/XLS; shared workbook-security; versioned mapping; file/batch/sheet/row lineage; reject_batch and skip_invalid; checkpoint resume; duplicate writes 0; security rejections 5; real outbound calls 0; verify; repository security 165; API 167; tenant 18; audit 0; final E2E 37/37"
+        },
+        {
+          "loop": "L-0019",
+          "status": "in_progress",
+          "testCommits": [
+            "603c664",
+            "3058c32"
+          ],
+          "verification": "RED as designed: npm run test:connector:web-leads --workspace backend fails with ERR_MODULE_NOT_FOUND because web-lead-ingestion-connector.ts is not implemented; security contracts 12; real outbound calls 0"
         }
       ]
     },

@@ -740,3 +740,19 @@
 - 新增 ADR-0018 与 L-0019 Evidence，关联 `REQ-GJ-LEAD-001 / TASK-GJ-0201`、R-006/R-015。
 - 专项契约先锁定 allowlist、DNS/IP/重定向、robots/许可、租户限流、内容限制/隔离、分页/checkpoint、恢复、幂等和真实外呼 0。
 - 首次专项实际运行以 `ERR_MODULE_NOT_FOUND` 失败，缺少 `web-lead-ingestion-connector.js`；当前仅保存 Test-first/Red 检查点，不得标记 Done。
+
+
+## 2026-07-15 — L-0019 会话收口与可恢复性审计
+
+### Audit
+
+- 发现 PROJECT_STATUS/HANDOFF 仍将 L-0019 写为“待启动”，与仓库实际 Test-first/Red 状态不一致。
+- 发现工作区包含尚未提交的超时、robots 不可用、重定向超限和缺少许可依据测试增强。
+- 将测试增强固化为 Commit `3058c32`，保留初始 Test-first Commit `603c664`。
+- 再次执行专项测试，确认生产实现文件不存在，实际结果为预期 `ERR_MODULE_NOT_FOUND`；真实外呼 0。
+
+### Record / Next
+
+- 更新 PROJECT_STATUS、FEATURES、TRACEABILITY、HANDOFF 和 L-0019 Evidence，使下一会话不依赖聊天上下文即可恢复。
+- 下一动作唯一化：实现 `web-lead-ingestion-connector.ts`，按专项失败逐项转绿，再执行 build、verify、audit、E2E 和文档收口。
+- 当前不宣称 L-0019 实现完成，不宣称全量质量门禁通过。

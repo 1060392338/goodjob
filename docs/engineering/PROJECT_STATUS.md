@@ -3,7 +3,7 @@
 更新时间：2026-07-15
 当前分支：`codex/phase-3-lead-pipeline`
 当前阶段：阶段 3——获客数据管道
-整体状态：L-0018 已完成，L-0019 待启动
+整体状态：L-0019 已进入 Test-first/Red，实现尚未开始
 
 ## 阶段门禁概览
 
@@ -12,7 +12,7 @@
 | 0 接管与安全基线 | Verification | Harness、生产配置门禁、工作簿安全、audit 0、E2E 37/37 | GitHub 历史扫描、Linux/Node 22 Actions、部署凭证轮换确认 |
 | 1 业务行为基线 | Baseline established | 后端 self-test、security test、167 个 API 操作、37 条 E2E | 远端 CI 固化；持续维护角色/API 矩阵 |
 | 2 可维护架构基础 | Accepted with carry-over | ADR-0005~0015；机器追踪门禁；后端 30 个 API 模块化；Gateway/Connector、SecretVault、线索外联 Repository/Unit of Work、AI 工作流持久化、前端懒加载与 Bundle Budget | 其他 Store Repository、剩余超大模块、真实 MySQL/部署/CI 演练已显式转入阶段 3/4/7，不作为本阶段完成项 |
-| 3 获客数据管道 | In progress | L-0017 统一管道基础与 L-0018 CSV/Excel Connector 已完成；共享工作簿安全、映射、血缘、幂等、恢复和安全拒绝通过 | 网页/搜索、第三方 API Connector 与阶段验收尚待完成；真实供应商验收需凭证 |
+| 3 获客数据管道 | In progress | L-0017 统一管道基础与 L-0018 CSV/Excel Connector 已完成；L-0019 ADR 与 Test-first/Red 契约已建立 | L-0019 实现/全量验收、L-0020 第三方 API Connector、L-0021 阶段验收尚待完成；真实供应商验收需凭证 |
 | 4~7 AI/协作/发布 | Backlog | ModelGateway、LangGraph Workflow Engine、持久化与统一 Adapter 设计已具备前置基础 | AI 功能 API/UI、三平台 Adapter 与正式发布门禁未完成 |
 
 详细阶段、验收和测试标准见 `DEVELOPMENT_PLAN.md`。
@@ -48,10 +48,12 @@
 
 ## 当前循环
 
-**L-0019：公开网页/搜索 Connector 安全执行边界——待启动**
+**L-0019：公开网页/搜索 Connector 安全执行边界——Test-first/Red**
 
-- 必须先建立 ADR/Test-first 契约；
-- 覆盖域名许可、DNS/IP/重定向 SSRF 防护、robots/许可记录、限流、内容类型/大小/超时、恶意内容隔离、checkpoint、幂等和血缘；
+- ADR-0018、Evidence 和专项测试已建立；检查点 Commit：`603c664`、`3058c32`；
+- 2026-07-15 专项测试以 `ERR_MODULE_NOT_FOUND` 按预期失败，生产实现 `web-lead-ingestion-connector.ts` 尚不存在；
+- 测试已覆盖域名许可、DNS/IP/重定向 SSRF 防护、robots/许可记录、限流、内容类型/大小/超时、恶意内容隔离、checkpoint、幂等和血缘；
+- 下一动作是按 ADR-0018 和测试实现 Connector，不得删测或放宽失败关闭边界；
 - 仅使用 Mock Transport/fixtures，真实网络、真实凭证和真实供应商调用保持 0。
 
 ## 阻塞与持续风险
