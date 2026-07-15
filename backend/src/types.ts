@@ -140,6 +140,27 @@ export interface LeadActivity {
   createdAt: string;
 }
 
+export type LeadOutreachAction = "social-touch" | "send-email";
+export type LeadOutreachStatus = "pending" | "succeeded" | "failed";
+
+export interface LeadOutreachRequest {
+  id: string;
+  leadId: string;
+  operatorId: string;
+  action: LeadOutreachAction;
+  channel: string;
+  idempotencyKeyHash: string;
+  payloadHash: string;
+  status: LeadOutreachStatus;
+  activityId: string;
+  externalMessageId: string;
+  recipient: string;
+  subject: string;
+  errorMessage: string;
+  createdAt: string;
+  completedAt: string;
+}
+
 export interface WhatsAppMessage {
   id: string;
   customerId: string;

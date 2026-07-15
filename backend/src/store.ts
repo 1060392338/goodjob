@@ -37,7 +37,7 @@ import {
   whatsappBindings,
   whatsappMessages
 } from "./data.js";
-import type { AiModelConfig, CaseStudy, CommissionCalculation, CommissionExport, CommissionItem, CommissionProduct, CommissionRule, Competitor, Customer, CustomerActivity, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, ExamQuestionLink, ImportExportJob, KnowledgeAsset, Lead, LeadActivity, LeadSourceConfig, LeadSourceEvent, Memo, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, ProblemItem, Reminder, SalesRecordAudit, Todo, TradeDocument, User, WecomMessage, WebsiteOpportunity, WhatsAppMessage, WhatsAppBinding } from "./types.js";
+import type { AiModelConfig, CaseStudy, CommissionCalculation, CommissionExport, CommissionItem, CommissionProduct, CommissionRule, Competitor, Customer, CustomerActivity, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, ExamQuestionLink, ImportExportJob, KnowledgeAsset, Lead, LeadActivity, LeadOutreachRequest, LeadSourceConfig, LeadSourceEvent, Memo, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, ProblemItem, Reminder, SalesRecordAudit, Todo, TradeDocument, User, WecomMessage, WebsiteOpportunity, WhatsAppMessage, WhatsAppBinding } from "./types.js";
 
 export interface CrmStore {
   mode: "memory" | "mysql";
@@ -46,6 +46,7 @@ export interface CrmStore {
   customerActivities: CustomerActivity[];
   leads: Lead[];
   leadActivities: LeadActivity[];
+  leadOutreachRequests: LeadOutreachRequest[];
   leadSourceEvents: LeadSourceEvent[];
   todos: Todo[];
   deals: Deal[];
@@ -88,6 +89,7 @@ export const memoryStore: CrmStore = {
   customerActivities,
   leads,
   leadActivities,
+  leadOutreachRequests: [],
   leadSourceEvents,
   todos,
   deals,

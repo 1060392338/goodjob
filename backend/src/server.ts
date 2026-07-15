@@ -5,12 +5,13 @@ import helmet from "helmet";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import nodemailer from "nodemailer";
 import { z } from "zod";
 import { canManageAccount, canManageAccounts, canManageRole, canSeeOwner, canSeePersonalData, canSeeTeam, hashPassword, publicUser, requireAuth } from "./auth.js";
 import { asyncRoute } from "./http/async-route.js";
+import { nodemailerOutboundEmailGateway, outboundEmailError, type OutboundEmailReceipt } from "./gateways/outbound-email-gateway.js";
 import { customerWithPipeline } from "./domain/customers/customer-service.js";
-import { createLeadFromSource, findCustomerMatches } from "./domain/leads/lead-service.js";
+import { createDealEvent } from "./domain/deals/deal-service.js";
+import { createLeadFromSource } from "./domain/leads/lead-service.js";
 import { createMysqlStore } from "./mysql-store.js";
 import { getStore, setStore } from "./store.js";
 import { LEAD_PROVIDERS, getProvider, providerMeta, type LeadProvider, type LeadQuery, type RawLead } from "./lead-providers.js";
@@ -19,6 +20,8 @@ import { registerSwagger } from "./swagger.js";
 import { registerAuthRoutes } from "./routes/auth-routes.js";
 import { registerCustomerRoutes } from "./routes/customer-routes.js";
 import { registerLeadRoutes } from "./routes/lead-routes.js";
+import { registerLeadOutreachRoutes } from "./routes/lead-outreach-routes.js";
+import { registerLeadConversionRoutes } from "./routes/lead-conversion-routes.js";
 import { registerSystemRoutes } from "./routes/system-routes.js";
 import { assertRuntimeConfiguration } from "./runtime-config.js";
 import type { AiModelConfig, CommissionCalculation, CommissionItem, CommissionProduct, CommissionRule, Customer, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, Lead, LeadSourceConfig, LeadSourceEvent, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, SalesRecordAudit, SessionUser, Todo, TradeDocument, TradeDocumentAudit, TradeDocumentSendRecord, WebsiteOpportunity } from "./types.js";
@@ -181,55 +184,6 @@ function resolveOcrJob(user: SessionUser, requestedId: string, createIfMissing =
   return job;
 }
 
-async function sendOutboundEmail(user: ReturnType<typeof getStore>["users"][number], payload: { to: string; subject: string; body: string }) {
-  if (!user.outboundEmail || !user.smtpHost || !user.smtpUser || !user.smtpPassword) {
-    throw new Error("请先在个人信息页完整配置发件邮箱、SMTP服务器、账号和授权码");
-  }
-  const smtpPort = Number(user.smtpPort || 465);
-  const smtpSecure = user.smtpSecure ?? true;
-  if (smtpPort === 587 && smtpSecure) {
-    throw new Error("SMTP配置不匹配：端口 587 通常应选择 STARTTLS/普通；如果要使用 SSL/TLS，请把端口改为 465。");
-  }
-  if (smtpPort === 465 && !smtpSecure) {
-    throw new Error("SMTP配置不匹配：端口 465 通常应选择 SSL/TLS；如果要使用 STARTTLS/普通，请把端口改为 587。");
-  }
-  const transport = process.env.NODE_ENV === "test"
-    ? nodemailer.createTransport({ streamTransport: true, newline: "unix", buffer: true })
-    : nodemailer.createTransport({
-      host: user.smtpHost,
-      port: smtpPort,
-      secure: smtpSecure,
-      auth: {
-        user: user.smtpUser,
-        pass: user.smtpPassword
-      }
-    });
-  return transport.sendMail({
-    from: `"${user.emailSenderName || user.name}" <${user.outboundEmail}>`,
-    to: payload.to,
-    subject: payload.subject,
-    text: payload.body
-  });
-}
-
-function outboundEmailError(error: unknown, user: ReturnType<typeof getStore>["users"][number]) {
-  const message = error instanceof Error ? error.message : String(error || "");
-  if (message.startsWith("请先") || message.startsWith("SMTP配置不匹配")) return message;
-  const code = typeof error === "object" && error && "code" in error ? String((error as { code?: unknown }).code || "") : "";
-  const response = typeof error === "object" && error && "response" in error ? String((error as { response?: unknown }).response || "") : "";
-  const raw = `${message} ${response}`.trim();
-  const lower = raw.toLowerCase();
-  if (code === "EAUTH" || raw.includes("535") || lower.includes("invalid login") || lower.includes("authentication")) {
-    return "SMTP认证失败：请确认 SMTP账号 是完整邮箱，授权码不是网页登录密码，并且邮箱后台已开启 SMTP 服务。QQ邮箱请使用“授权码/客户端专用密码”。";
-  }
-  if (code === "ESOCKET" || code === "ECONNECTION" || code === "ETIMEDOUT" || lower.includes("wrong version number") || lower.includes("ssl")) {
-    return `SMTP连接失败：请检查服务器、端口和加密方式。当前配置为 ${user.smtpHost}:${user.smtpPort || 465}，${user.smtpSecure ?? true ? "SSL/TLS" : "STARTTLS/普通"}。`;
-  }
-  if (raw.includes("550") || lower.includes("sender")) {
-    return "SMTP发件人被拒绝：请确认发件邮箱、SMTP账号属于同一个邮箱账号，且服务商允许该账号外发。";
-  }
-  return `邮件发送失败：${message || "SMTP服务未返回明确原因"}`;
-}
 
 function hasProspectContactInfo(item: WebsiteOpportunity) {
   const value = `${item.contactInfo || ""} ${item.contact || ""}`.trim();
@@ -464,7 +418,7 @@ app.post("/api/profile/test-email", requireAuth, asyncRoute(async (_req, res) =>
   }
   const testTo = body.to?.trim() || user.outboundEmail;
   try {
-    const info = await sendOutboundEmail(user, {
+    const info = await nodemailerOutboundEmailGateway.send(user, {
       to: testTo,
       subject: "GoodJob CRM SMTP 测试邮件",
       body: `这是一封来自 GoodJob CRM 的 SMTP 测试邮件。\n\n账号：${user.email}\n时间：${new Date().toISOString()}`
@@ -489,9 +443,9 @@ app.post("/api/profile/send-development-email", requireAuth, asyncRoute(async (r
     res.status(404).json({ message: "账号不存在" });
     return;
   }
-  let mailInfo: Awaited<ReturnType<typeof sendOutboundEmail>>;
+  let mailInfo: OutboundEmailReceipt;
   try {
-    mailInfo = await sendOutboundEmail(user, { to: body.to, subject: body.subject, body: body.body });
+    mailInfo = await nodemailerOutboundEmailGateway.send(user, { to: body.to, subject: body.subject, body: body.body });
   } catch (error) {
     res.status(400).json({ message: outboundEmailError(error, user) });
     return;
@@ -541,9 +495,9 @@ app.post("/api/prospect-list/:id/send-development-email", requireAuth, asyncRout
     res.status(400).json({ message: "请先核验联系方式并标记为可联系，再发送开发信" });
     return;
   }
-  let mailInfo: Awaited<ReturnType<typeof sendOutboundEmail>>;
+  let mailInfo: OutboundEmailReceipt;
   try {
-    mailInfo = await sendOutboundEmail(user, { to: body.to, subject: body.subject, body: body.body });
+    mailInfo = await nodemailerOutboundEmailGateway.send(user, { to: body.to, subject: body.subject, body: body.body });
   } catch (error) {
     res.status(400).json({ message: outboundEmailError(error, user) });
     return;
@@ -719,220 +673,8 @@ registerCustomerRoutes(app);
 // ---------------------------------------------------------------------------
 registerLeadRoutes(app);
 
-app.post("/api/leads/:id/social-touch", requireAuth, asyncRoute(async (req, res) => {
-  const schema = z.object({
-    channel: z.enum(["call", "wechat", "whatsapp", "linkedin"]),
-    message: z.string().min(1).max(1200),
-    nextFollowAt: z.string().optional().default("")
-  });
-  const body = schema.parse(req.body);
-  const store = getStore();
-  const lead = store.leads.find((item) => item.id === req.params.id);
-  if (!lead || !canSeeOwner(req.user!, lead.ownerId, lead.teamId) || lead.deletedAt) {
-    res.status(404).json({ message: "线索不存在、已删除或无权访问" });
-    return;
-  }
-  const channelText: Record<typeof body.channel, string> = { call: "电话", wechat: "微信", whatsapp: "WhatsApp", linkedin: "LinkedIn" };
-  const now = new Date().toISOString();
-  const activity = {
-    id: `la_${Date.now()}`,
-    leadId: lead.id,
-    type: body.channel,
-    content: `${channelText[body.channel]}触达：${body.message}`,
-    operatorId: req.user!.id,
-    nextFollowAt: body.nextFollowAt,
-    createdAt: now
-  };
-  store.leadActivities.unshift(activity);
-  lead.lastActivityAt = "刚刚";
-  if (body.nextFollowAt) lead.nextFollowAt = body.nextFollowAt;
-  if (lead.status === "new") lead.status = "following";
-  await store.persist();
-  res.json({ activity, lead });
-}));
-
-app.post("/api/leads/:id/send-email", requireAuth, asyncRoute(async (req, res) => {
-  const schema = z.object({
-    to: z.string().email(),
-    subject: z.string().min(1).max(160),
-    body: z.string().min(10).max(3000),
-    nextFollowAt: z.string().optional().default("")
-  });
-  const body = schema.parse(req.body);
-  const store = getStore();
-  const user = store.users.find((item) => item.id === req.user!.id);
-  const lead = store.leads.find((item) => item.id === req.params.id);
-  if (!user) {
-    res.status(404).json({ message: "账号不存在" });
-    return;
-  }
-  if (!lead || !canSeeOwner(req.user!, lead.ownerId, lead.teamId) || lead.deletedAt) {
-    res.status(404).json({ message: "线索不存在、已删除或无权访问" });
-    return;
-  }
-  let mailInfo: Awaited<ReturnType<typeof sendOutboundEmail>>;
-  try {
-    mailInfo = await sendOutboundEmail(user, { to: body.to, subject: body.subject, body: body.body });
-  } catch (error) {
-    res.status(400).json({ message: outboundEmailError(error, user) });
-    return;
-  }
-  const sentAt = new Date().toISOString();
-  user.lastDevelopmentEmailAt = sentAt;
-  user.lastDevelopmentEmailTo = body.to;
-  user.lastDevelopmentEmailSubject = body.subject;
-  const activity = {
-    id: `la_${Date.now()}`,
-    leadId: lead.id,
-    type: "email" as const,
-    content: `邮件发送：${body.subject}`,
-    operatorId: req.user!.id,
-    nextFollowAt: body.nextFollowAt,
-    createdAt: sentAt
-  };
-  store.leadActivities.unshift(activity);
-  lead.lastActivityAt = "刚刚";
-  if (body.nextFollowAt) lead.nextFollowAt = body.nextFollowAt;
-  if (lead.status === "new") lead.status = "following";
-  await store.persist();
-  res.json({
-    sent: {
-      id: `mail_${Date.now()}`,
-      status: "sent",
-      simulated: process.env.NODE_ENV === "test",
-      messageId: mailInfo.messageId,
-      from: user.outboundEmail,
-      senderName: user.emailSenderName || user.name,
-      to: body.to,
-      company: lead.company,
-      subject: body.subject,
-      sentAt
-    },
-    activity,
-    lead,
-    user: accountUser(user)
-  });
-}));
-
-app.get("/api/leads/:id/conversion-preview", requireAuth, (req, res) => {
-  const store = getStore();
-  const lead = store.leads.find((item) => item.id === req.params.id);
-  if (!lead || !canSeeOwner(req.user!, lead.ownerId, lead.teamId) || lead.deletedAt) {
-    res.status(404).json({ message: "线索不存在、已删除或无权访问" });
-    return;
-  }
-  res.json({ lead, customerMatches: findCustomerMatches(req.user!, lead) });
-});
-
-app.post("/api/leads/:id/convert", requireAuth, asyncRoute(async (req, res) => {
-  const conversionSchema = z.object({
-    customerMode: z.enum(["create", "existing"]).optional().default("create"),
-    customerId: z.string().optional().default(""),
-    createDeal: z.boolean().optional().default(false),
-    deal: z.object({
-      title: z.string().max(200).optional().default(""),
-      product: z.string().max(200).optional().default(""),
-      amount: z.coerce.number().nonnegative().optional(),
-      quantity: z.coerce.number().int().nonnegative().optional().default(0),
-      unitPrice: z.coerce.number().nonnegative().optional().default(0),
-      nextAction: z.string().max(200).optional().default("")
-    }).optional().default({})
-  });
-  const body = conversionSchema.parse(req.body || {});
-  const store = getStore();
-  const lead = store.leads.find((item) => item.id === req.params.id);
-  if (!lead || !canSeeOwner(req.user!, lead.ownerId, lead.teamId) || lead.deletedAt) {
-    res.status(404).json({ message: "线索不存在、已删除或无权访问" });
-    return;
-  }
-  if (lead.convertedCustomerId) {
-    const customer = store.customers.find((item) => item.id === lead.convertedCustomerId);
-    const deal = lead.convertedDealId ? store.deals.find((item) => item.id === lead.convertedDealId) : undefined;
-    res.json({ lead, customer: customer ? customerWithPipeline(customer) : null, deal, duplicate: true });
-    return;
-  }
-  const now = new Date().toISOString();
-  let customer: Customer | undefined;
-  if (body.customerMode === "existing") {
-    customer = store.customers.find((item) => item.id === body.customerId);
-    if (!customer || !canSeeOwner(req.user!, customer.ownerId, customer.teamId)) {
-      res.status(404).json({ message: "要关联的客户不存在或无权访问" });
-      return;
-    }
-  } else {
-    customer = {
-      id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      company: lead.company,
-      country: lead.country || "未知",
-      contact: lead.contact || "待维护",
-      ownerId: lead.ownerId,
-      teamId: lead.teamId,
-      stage: "询盘",
-      amount: 0,
-      health: 72,
-      nextReminder: lead.nextFollowAt || "明天 10:00",
-      wecomBound: false,
-      billingName: lead.company,
-      billingAddress: "",
-      documentContact: lead.email ? `${lead.contact || "待维护"} / ${lead.email}` : lead.contact || "",
-      defaultPortDischarge: "",
-      defaultIncoterm: "",
-      defaultPaymentTerm: ""
-    };
-    store.customers.unshift(customer);
-  }
-
-  let deal: Deal | undefined;
-  if (body.createDeal) {
-    const nowIso = new Date().toISOString();
-    const nextActionAt = /^\d{4}-\d{2}-\d{2}/.test(lead.nextFollowAt) ? lead.nextFollowAt.slice(0, 10) : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    deal = {
-      id: `d_lead_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      customerId: customer.id,
-      title: body.deal.title.trim() || `${lead.company} 采购需求`,
-      stage: "询盘",
-      product: body.deal.product.trim(),
-      quantity: body.deal.quantity,
-      unitPrice: body.deal.unitPrice,
-      amount: typeof body.deal.amount === "number" ? body.deal.amount : (lead.estimatedAmount || body.deal.quantity * body.deal.unitPrice),
-      currency: "USD",
-      amountType: "estimate",
-      ownerId: customer.ownerId,
-      teamId: customer.teamId,
-      nextAction: body.deal.nextAction.trim() || "确认产品、数量与报价要求",
-      nextActionAt,
-      expectedCloseAt: "",
-      stageChangedAt: nowIso
-    };
-    store.deals.unshift(deal);
-    createDealEvent({
-      dealId: deal.id,
-      type: "created",
-      content: `由线索 ${lead.company} 确认入客户并创建商机`,
-      operatorId: req.user!.id,
-      toStage: "询盘",
-      nextAction: deal.nextAction,
-      nextActionAt: deal.nextActionAt,
-      createdAt: nowIso
-    });
-  }
-  lead.status = "converted";
-  lead.stage = "已转化";
-  lead.convertedCustomerId = customer.id;
-  lead.convertedDealId = deal?.id || "";
-  lead.lastActivityAt = "刚刚";
-  store.leadActivities.unshift({
-    id: `la_${Date.now()}`,
-    leadId: lead.id,
-    type: "system",
-    content: deal ? `确认并入库：关联客户 ${customer.company}，创建商机 ${deal.title}` : `确认并入库：关联客户 ${customer.company}`,
-    operatorId: req.user!.id,
-    nextFollowAt: "",
-    createdAt: now
-  });
-  await store.persist();
-  res.json({ lead, customer: customerWithPipeline(customer), deal, duplicate: false });
-}));
+registerLeadOutreachRoutes(app, { emailGateway: nodemailerOutboundEmailGateway });
+registerLeadConversionRoutes(app);
 
 // ---------------------------------------------------------------------------
 // WhatsApp (阶段0:手动录入对话 + 手动翻译)。仅官方合规路径,不接非官方库。
@@ -1802,16 +1544,6 @@ function calculatedDealAmount(body: { amount?: number; quantity: number; unitPri
   return Math.round(body.quantity * body.unitPrice * 100) / 100;
 }
 
-function createDealEvent(input: Omit<DealEvent, "id" | "createdAt"> & { createdAt?: string }) {
-  const store = getStore();
-  const event: DealEvent = {
-    ...input,
-    id: `de_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    createdAt: input.createdAt || new Date().toISOString()
-  };
-  store.dealEvents.unshift(event);
-  return event;
-}
 
 function dealEventTypeForStage(stage: Deal["stage"]): DealEvent["type"] {
   if (stage === "已报价") return "quote";

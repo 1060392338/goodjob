@@ -3,7 +3,7 @@ import { hashPassword } from "./auth.js";
 import { aiModelConfigs, caseStudies, commissionCalculations, commissionExports, commissionItems, commissionProducts, commissionRules, competitors, customerActivities, customers, dealEvents, deals, examAttempts, examQuestionLinks, examQuestions, exams, importExportJobs, knowledgeAssets, leadActivities, leadSourceConfigs, leadSourceEvents, leads, memos, monthlySalesRecords, ocrJobs, planTasks, planTemplates, problems, reminders, salesRecordAudits, todos, tradeDocuments, users, wecomMessages, websiteOpportunities, whatsappBindings, whatsappMessages } from "./data.js";
 import type { CrmStore } from "./store.js";
 import type { WhatsAppBinding, WhatsAppMessage } from "./types.js";
-import type { AiModelConfig, CaseStudy, CommissionCalculation, CommissionExport, CommissionItem, CommissionProduct, CommissionRule, Competitor, Customer, CustomerActivity, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, ExamQuestionLink, ImportExportJob, KnowledgeAsset, Lead, LeadActivity, LeadSourceConfig, LeadSourceEvent, Memo, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, ProblemItem, Reminder, SalesRecordAudit, Todo, TradeDocument, User, WecomMessage, WebsiteOpportunity } from "./types.js";
+import type { AiModelConfig, CaseStudy, CommissionCalculation, CommissionExport, CommissionItem, CommissionProduct, CommissionRule, Competitor, Customer, CustomerActivity, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, ExamQuestionLink, ImportExportJob, KnowledgeAsset, Lead, LeadActivity, LeadOutreachRequest, LeadSourceConfig, LeadSourceEvent, Memo, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, ProblemItem, Reminder, SalesRecordAudit, Todo, TradeDocument, User, WecomMessage, WebsiteOpportunity } from "./types.js";
 
 const defaultUrl = "mysql://goodjob:change_me@127.0.0.1:3306/goodjob_crm";
 
@@ -23,6 +23,7 @@ export async function createMysqlStore(): Promise<CrmStore> {
     customerActivities: await loadCustomerActivities(pool),
     leads: await loadLeads(pool),
     leadActivities: await loadLeadActivities(pool),
+    leadOutreachRequests: await loadLeadOutreachRequests(pool),
     leadSourceEvents: await loadLeadSourceEvents(pool),
     todos: await loadTodos(pool),
     deals: await loadDeals(pool),
@@ -308,6 +309,26 @@ async function ensureSchema(pool: mysql.Pool) {
     next_follow_at VARCHAR(100) DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_lead_activities_lead(lead_id)
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS lead_outreach_requests (
+    id VARCHAR(64) PRIMARY KEY,
+    lead_id VARCHAR(64) NOT NULL,
+    operator_id VARCHAR(64) NOT NULL,
+    action VARCHAR(30) NOT NULL,
+    channel VARCHAR(30) DEFAULT '',
+    idempotency_key_hash CHAR(64) NOT NULL,
+    payload_hash CHAR(64) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    activity_id VARCHAR(64) DEFAULT '',
+    external_message_id VARCHAR(255) DEFAULT '',
+    recipient VARCHAR(320) DEFAULT '',
+    subject VARCHAR(160) DEFAULT '',
+    error_message VARCHAR(500) DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME NULL,
+    UNIQUE KEY uniq_lead_outreach_idempotency(lead_id, operator_id, action, idempotency_key_hash),
+    INDEX idx_lead_outreach_lead(lead_id),
+    INDEX idx_lead_outreach_status(status)
   )`);
   await pool.query(`CREATE TABLE IF NOT EXISTS lead_source_events (
     id VARCHAR(64) PRIMARY KEY,
@@ -1048,6 +1069,26 @@ async function loadLeadActivities(pool: mysql.Pool): Promise<LeadActivity[]> {
   }));
 }
 
+async function loadLeadOutreachRequests(pool: mysql.Pool): Promise<LeadOutreachRequest[]> {
+  return (await rows<Record<string, any>>(pool, "SELECT * FROM lead_outreach_requests ORDER BY created_at DESC")).map((row) => ({
+    id: row.id,
+    leadId: row.lead_id,
+    operatorId: row.operator_id,
+    action: row.action,
+    channel: row.channel || "",
+    idempotencyKeyHash: row.idempotency_key_hash,
+    payloadHash: row.payload_hash,
+    status: row.status,
+    activityId: row.activity_id || "",
+    externalMessageId: row.external_message_id || "",
+    recipient: row.recipient || "",
+    subject: row.subject || "",
+    errorMessage: row.error_message || "",
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at || new Date().toISOString(),
+    completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : row.completed_at || ""
+  }));
+}
+
 async function loadLeadSourceEvents(pool: mysql.Pool): Promise<LeadSourceEvent[]> {
   return (await rows<Record<string, any>>(pool, "SELECT * FROM lead_source_events ORDER BY received_at DESC")).map((row) => ({
     id: row.id,
@@ -1636,6 +1677,7 @@ async function persistAll(pool: mysql.Pool, store: CrmStore) {
     await replaceRows(connection, "customer_activities", store.customerActivities, (item) => [item.id, item.customerId, item.type || "note", item.content || "", item.operatorId || "", item.nextReminder || "", mysqlDate(item.createdAt)], "(id,customer_id,type,content,operator_id,next_reminder,created_at)");
     await replaceRows(connection, "leads", store.leads, (item) => [item.id, item.company, item.contact || "", item.country || "", item.email || "", item.phone || "", item.wechat || "", item.source || "", item.sourceType || "outbound", item.sourceChannel || "manual", item.sourceCampaign || "", item.externalId || "", item.sourceUrl || "", item.intent || "中", item.stage || "新线索", item.status || "new", item.ownerId, item.teamId, item.estimatedAmount || 0, item.nextFollowAt || "", item.lastActivityAt || "", item.remark || "", item.convertedCustomerId || "", item.convertedDealId || "", item.deletedAt ? mysqlDate(item.deletedAt) : null, item.deletedReason || "", item.deletedBy || "", item.purgeAt ? mysqlDate(item.purgeAt) : null, item.statusBeforeDelete || "", mysqlDate(item.createdAt)], "(id,company,contact,country,email,phone,wechat,source,source_type,source_channel,source_campaign,external_id,source_url,intent,stage,status,owner_id,team_id,estimated_amount,next_follow_at,last_activity_at,remark,converted_customer_id,converted_deal_id,deleted_at,deleted_reason,deleted_by,purge_at,status_before_delete,created_at)");
     await replaceRows(connection, "lead_activities", store.leadActivities, (item) => [item.id, item.leadId, item.type || "note", item.content || "", item.operatorId || "", item.nextFollowAt || "", mysqlDate(item.createdAt)], "(id,lead_id,type,content,operator_id,next_follow_at,created_at)");
+    await replaceRows(connection, "lead_outreach_requests", store.leadOutreachRequests, (item) => [item.id, item.leadId, item.operatorId, item.action, item.channel || "", item.idempotencyKeyHash, item.payloadHash, item.status, item.activityId || "", item.externalMessageId || "", item.recipient || "", item.subject || "", item.errorMessage || "", mysqlDate(item.createdAt), item.completedAt ? mysqlDate(item.completedAt) : null], "(id,lead_id,operator_id,action,channel,idempotency_key_hash,payload_hash,status,activity_id,external_message_id,recipient,subject,error_message,created_at,completed_at)");
     await replaceRows(connection, "lead_source_events", store.leadSourceEvents, (item) => [item.id, item.leadId, item.sourceType, item.channel, item.campaign || "", item.externalId || "", item.sourceUrl || "", mysqlDate(item.occurredAt), mysqlDate(item.receivedAt), item.rawPayload || "{}", item.ownerId, item.teamId], "(id,lead_id,source_type,channel,campaign,external_id,source_url,occurred_at,received_at,raw_payload,owner_id,team_id)");
     await replaceRows(connection, "deals", store.deals, (item) => [item.id, item.customerId, item.title, item.stage, item.product || "", item.quantity || 0, item.unitPrice || 0, item.amount, item.currency || "USD", item.amountType || "estimate", item.ownerId, item.teamId, item.nextAction, item.nextActionAt || "", item.expectedCloseAt || "", mysqlDate(item.stageChangedAt), item.closedAt ? mysqlDate(item.closedAt) : null, item.wonReason || "", item.lostReason || "", item.lostReasonCategory || "", item.revisitAt || "", item.archivedAt ? mysqlDate(item.archivedAt) : null], "(id,customer_id,title,stage,product,quantity,unit_price,amount,currency,amount_type,owner_id,team_id,next_action,next_action_at,expected_close_at,stage_changed_at,closed_at,won_reason,lost_reason,lost_reason_category,revisit_at,archived_at)");
     await replaceRows(connection, "deal_events", store.dealEvents, (item) => [item.id, item.dealId, item.type, item.content || "", item.operatorId, item.fromStage || "", item.toStage || "", item.nextAction || "", item.nextActionAt || "", item.relatedDocumentId || "", mysqlDate(item.createdAt)], "(id,deal_id,event_type,content,operator_id,from_stage,to_stage,next_action,next_action_at,related_document_id,created_at)");
