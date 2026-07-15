@@ -66,3 +66,12 @@
 - R-015 保持 `Mitigating`：API Provider checkpoint 上下文绑定、故障恢复、完整重跑 duplicate writes 0 和逐记录血缘已通过；真实客户数据与真实供应商验收继续 Deferred。
 - 首次完整 `verify` 曾因动态测试端口随机命中 Fetch 禁用端口出现一次 `bad port`，未修改代码复跑 PASS；L-0021 若再现必须登记并修复独立测试稳定性缺陷。
 - L-0020 无真实网络、真实凭证、真实供应商、真实客户数据、数据库迁移、schema 或公开 API 变化，真实外呼 0。
+
+## 2026-07-15 L-0021 阶段 3 验收风险复核
+
+- 阶段结论：Accepted with explicit deferred external validation。
+- R-006 保持 `Open`：Web Connector 的许可/robots/SSRF/内容隔离 Mock 契约通过；真实网页许可、真实网络和阶段 4 Prompt 注入红队仍未验证。
+- R-013 保持 `Verification`：SecretVault/credential handle 与泄漏 0 通过；真实部署、备份恢复、供应商额度告警和密钥轮换仍待验证。
+- R-015 保持 `Mitigating`：三类 Connector 的 checkpoint、恢复、完整重跑 duplicate writes 0 和逐记录血缘通过；真实客户数据与真实供应商验收继续 Deferred。
+- L-0020 出现过一次动态端口 `bad port`，L-0021 完整门禁未复现；保留观察，若再次出现则登记独立稳定性缺陷。
+- 阶段 3 无真实网络、真实凭证、真实供应商、真实客户数据、数据库迁移、schema 或公开 API 变化，真实外呼 0。

@@ -844,3 +844,25 @@
 ### Next
 
 - 先创建独立 Test-first Commit，再执行四组专项和全量门禁；按实际结果更新阶段状态和 Evidence，使验收门禁转绿。
+
+## 2026-07-15 — Loop L-0021：阶段 3 全量验收（完成）
+
+### Verify
+
+- 四组专项独立 PASS：统一 Pipeline、File、Web、API Provider；三类 Connector 均实现 `LeadIngestionConnector`。
+- 故障恢复和完整重跑通过；duplicate writes 0；credential leaks 0；真实外呼 0。
+- `npm run verify` PASS；repository security 176；REQ/TASK 16/16；API 167；tenant 18；frontend self-test 44；workbook security/Bundle Budget PASS。
+- dependency audit PASS，0 vulnerabilities；Playwright PASS，37/37；`git diff --check` PASS。
+- L-0020 的一次动态端口 `bad port` 在本循环未复现。
+
+### Accept / Review
+
+- 阶段结论：Accepted with explicit deferred external validation。
+- REQ-GJ-LEAD-001 与 L-0017~L-0021 标记 Done；追踪矩阵、Evidence、风险、回滚和交接已同步。
+- 真实客户文件、网页许可/网络、供应商/凭证、真实数据库和阶段 4 模型红队继续 Deferred。
+- R-006 Open、R-013 Verification、R-015 Mitigating，不因本地 Mock 验收自动关闭。
+
+### Next
+
+- `currentIteration` 切换为 L-0022；阶段 4 从 AI 线索清洗、补全、去重与 ICP 评分的 Test-first 契约开始。
+- 真实模型供应商、API Key、生产调用、真实客户数据和不可逆评分规则必须暂停确认。

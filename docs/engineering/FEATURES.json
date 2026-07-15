@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0021",
+  "currentIteration": "L-0022",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -472,7 +472,7 @@
       "task": "TASK-GJ-0201",
       "title": "统一 LeadSourceConnector 与数据血缘",
       "phase": 3,
-      "status": "in_progress",
+      "status": "done",
       "priority": "P0",
       "acceptance": [
         "CSV/Excel、网页/搜索、第三方 API 使用统一标准化管道",
@@ -505,7 +505,7 @@
         "docs/engineering/adr/ADR-0019-third-party-api-provider-boundary.md",
         "docs/engineering/adr/ADR-0020-phase-3-machine-verifiable-acceptance.md"
       ],
-      "note": "L-0017~L-0020 已完成。L-0021 已建立 ADR-0020 和机器验收 Test-first 契约，真实 Red 24 项已确认；下一步按失败项完成阶段收口。真实客户文件、真实网页许可/网络、真实供应商和真实凭证继续 Deferred。",
+      "note": "阶段 3 已完成 L-0017~L-0021，结论为 Accepted with explicit deferred external validation。统一 Pipeline、文件、Web 和 API Provider 契约均通过；真实客户文件、真实网页许可/网络、真实供应商、真实凭证和真实数据库继续 Deferred。",
       "increments": [
         {
           "loop": "L-0017",
@@ -538,17 +538,28 @@
         },
         {
           "loop": "L-0021",
-          "status": "in_progress",
-          "verification": "Test-first Red confirmed: phase3 acceptance check failed on 24 truthful incomplete-state conditions; real outbound calls 0; acceptance remediation pending"
+          "status": "done",
+          "testCommit": "789a0e4",
+          "verification": "PASS: phase 3 machine acceptance; unified Pipeline + file/web/API connector suites; verify; audit 0; E2E 37/37; duplicate writes 0; credential leaks 0; real outbound calls 0; external validation explicitly Deferred"
         }
-      ]
+      ],
+      "completedAt": "2026-07-15",
+      "verification": {
+        "traceability": "PASS: L-0017~L-0021 ADR/Evidence/Test-first/Commit/风险/回滚链路；三类 Connector 统一实现 LeadIngestionConnector；REQ-GJ-LEAD-001 traceability Done",
+        "quality": "PASS: four phase-3 focused suites; verify; repository security 176; 16 REQ / 16 TASK; API 167; tenant isolation 18; frontend self-test 44; bundle budget",
+        "releaseChecks": "PASS: dependency audit 0 vulnerabilities; Playwright 37/37; duplicate writes 0; credential leaks 0; real outbound calls 0",
+        "scope": "Accepted with explicit deferred external validation: real customer files, real web permission/network, real provider/credentials and real database drills remain Deferred",
+        "evidence": [
+          "docs/engineering/evidence/L-0021-phase-3-acceptance.md"
+        ]
+      }
     },
     {
       "id": "REQ-GJ-AI-LEAD-001",
       "task": "TASK-GJ-0301",
       "title": "AI 线索清洗、补全、去重与 ICP 评分",
       "phase": 4,
-      "status": "backlog",
+      "status": "ready",
       "priority": "P0",
       "acceptance": [
         "AI 结果包含来源、置信度、模型与 Prompt 版本",
@@ -561,7 +572,20 @@
         "prompt injection",
         "fallback"
       ],
-      "evidence": []
+      "evidence": [],
+      "design": [
+        "docs/engineering/adr/ADR-0002-ai-gateway.md",
+        "docs/engineering/adr/ADR-0007-ai-config-model-gateway-boundary.md",
+        "docs/engineering/adr/ADR-0010-langgraph-ai-workflow-engine.md"
+      ],
+      "note": "L-0022 Ready：先建立 AI 线索清洗/补全/评分的业务契约、金标数据集边界、Prompt/Schema 版本和人工采纳/驳回流程；真实模型凭证与生产调用需用户确认。",
+      "increments": [
+        {
+          "loop": "L-0022",
+          "status": "ready",
+          "verification": "Pending Test-first contract for phase 4 AI lead enrichment and ICP scoring"
+        }
+      ]
     },
     {
       "id": "REQ-GJ-AI-ASSIST-001",
