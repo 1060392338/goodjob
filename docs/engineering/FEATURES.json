@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0020",
+  "currentIteration": "L-0021",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -481,6 +481,9 @@
       ],
       "tests": [
         "npm run test:pipeline:lead-ingestion --workspace backend",
+        "npm run test:connector:file-leads --workspace backend",
+        "npm run test:connector:web-leads --workspace backend",
+        "npm run test:connector:api-leads --workspace backend",
         "npm run verify",
         "npm run audit:dependencies",
         "npm run test:e2e"
@@ -490,7 +493,8 @@
         "docs/engineering/evidence/L-0017-lead-ingestion-pipeline.md",
         "docs/engineering/evidence/L-0018-csv-excel-lead-connector.md",
         "docs/engineering/evidence/L-0019-public-web-search-connector.md",
-        "docs/engineering/evidence/L-0020-third-party-api-provider-boundary.md"
+        "docs/engineering/evidence/L-0020-third-party-api-provider-boundary.md",
+        "docs/engineering/evidence/L-0021-phase-3-acceptance.md"
       ],
       "design": [
         "docs/engineering/adr/ADR-0003-external-adapters.md",
@@ -500,7 +504,7 @@
         "docs/engineering/adr/ADR-0018-public-web-search-connector.md",
         "docs/engineering/adr/ADR-0019-third-party-api-provider-boundary.md"
       ],
-      "note": "L-0017~L-0019 已完成。L-0020 正在建立第三方 API Provider 插件边界，当前已完成 Test-first 契约并确认真实 Red，实现尚未开始；L-0021 尚未开始。真实供应商、凭证和网络继续 Deferred。",
+      "note": "L-0017~L-0020 已完成并有独立 Test-first、实现、专项测试和完整门禁证据。当前进入 L-0021 阶段 3 全量验收与回顾。真实客户文件、真实网页许可/网络、真实供应商和真实凭证继续 Deferred，不得混报完成。",
       "increments": [
         {
           "loop": "L-0017",
@@ -526,8 +530,15 @@
         },
         {
           "loop": "L-0020",
-          "status": "in_progress",
-          "verification": "Test-first PASS as process evidence: complete contract produced ERR_MODULE_NOT_FOUND before implementation; implementation pending"
+          "status": "done",
+          "testCommit": "33e508c",
+          "deliveryCommit": "c361a26",
+          "verification": "PASS: Provider Registry/versioning; credential handle; provider cursor isolation; mapper/API lineage; Retry-After and exponential backoff; request budget; 10 error classifications; checkpoint context binding; resumed after failure; duplicate writes 0; credential leaks 0; real outbound calls 0; backend build; verify repository security 173, traceability 16/16, API 167, tenant 18; audit 0; E2E 37/37"
+        },
+        {
+          "loop": "L-0021",
+          "status": "ready",
+          "verification": "Pending: phase 3 cross-connector acceptance, traceability audit, risk review and explicit deferred external validation"
         }
       ]
     },

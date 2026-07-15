@@ -3,7 +3,7 @@
 更新时间：2026-07-15
 当前分支：`codex/phase-3-lead-pipeline`
 当前阶段：阶段 3——获客数据管道
-整体状态：L-0019 已完成，L-0020 Test-first/Red 已完成（实现未开始）
+整体状态：L-0017~L-0020 已完成，L-0021 阶段 3 全量验收与回顾待执行
 
 ## 阶段门禁概览
 
@@ -11,8 +11,8 @@
 |---|---|---|---|
 | 0 接管与安全基线 | Verification | Harness、生产配置门禁、工作簿安全、audit 0、E2E 37/37 | GitHub 历史扫描、Linux/Node 22 Actions、部署凭证轮换确认 |
 | 1 业务行为基线 | Baseline established | 后端 self-test、security test、167 个 API 操作、37 条 E2E | 远端 CI 固化；持续维护角色/API 矩阵 |
-| 2 可维护架构基础 | Accepted with carry-over | ADR-0005~0015；机器追踪门禁；后端 30 个 API 模块化；Gateway/Connector、SecretVault、线索外联 Repository/Unit of Work、AI 工作流持久化、前端懒加载与 Bundle Budget | 其他 Store Repository、剩余超大模块、真实 MySQL/部署/CI 演练已显式转入阶段 3/4/7，不作为本阶段完成项 |
-| 3 获客数据管道 | In progress | L-0017 统一管道、L-0018 CSV/Excel、L-0019 公开网页/搜索安全 Connector 已完成并通过完整门禁 | L-0020 第三方 API Connector 与 L-0021 阶段验收尚待完成；真实供应商验收需凭证 |
+| 2 可维护架构基础 | Accepted with carry-over | ADR-0005~0015；机器追踪门禁；后端模块化、Gateway/Connector、SecretVault、Repository/UoW、AI 工作流持久化、前端懒加载 | 其他 Store Repository、剩余超大模块、真实 MySQL/部署/CI 演练继续转移 |
+| 3 获客数据管道 | Acceptance pending | L-0017 统一管道、L-0018 文件、L-0019 Web、L-0020 API Provider 均完成并通过各自专项和完整本地门禁 | L-0021 跨 Connector 全量验收、追踪复核和阶段回顾；真实外部验证显式 Deferred |
 | 4~7 AI/协作/发布 | Backlog | ModelGateway、LangGraph Workflow Engine、持久化与统一 Adapter 设计已具备前置基础 | AI 功能 API/UI、三平台 Adapter 与正式发布门禁未完成 |
 
 详细阶段、验收和测试标准见 `DEVELOPMENT_PLAN.md`。
@@ -22,62 +22,51 @@
 | 项目 | 当前事实 |
 |---|---|
 | 业务基线 | 当前 GoodJob 业务功能和行为为唯一基线，不进行 MVP 式推倒重写 |
-| 前端 | React 19、Vite、TypeScript；`prototype-api.ts` 11717 行；线索来源类型、选择状态和 4 个配置 API 客户端已迁入独立模块 |
-| 后端 | Express、TypeScript；`server.ts` 5823 行，系统/认证/客户/线索/AI 配置/来源配置共 30 个 API 已迁出并显式装配 |
-| 数据 | 支持 memory 与 MySQL；线索外联已通过 Repository/Unit of Work 按行持久化；AI 工作流具备 6 张 MySQL 状态表和跨实例恢复契约；其他领域仍保留旧 `persistAll` |
-| 外部副作用 | SMTP 通过 `OutboundEmailGateway`；模型 HTTP 通过 `ModelGateway`；来源连接测试通过 `LeadSourceConnector` |
-| 凭证安全 | `SecretVault` 使用 AES-256-GCM 和 Owner/Team/记录上下文绑定；模型与来源 Key 只以 `gjsec:v1` 密文落库；支持检查点迁移、轮换、吊销和损坏密文启动拒绝 |
-| AI 编排 | `AiWorkflowEngine` + LangGraph.js 技术验证完成；模型只能经 ModelGateway；支持暂停/恢复、确认/驳回/重跑、权限复检、幂等模拟写入和 Trace 审计 |
-| AI 持久化 | MySQL Checkpointer、run、审批、Effect 和审计持久化已完成 Fake Pool 契约；跨实例恢复、并发决策、幂等和 Secret 拒绝通过，真实 MySQL 演练未完成 |
-| AI 依赖 | 精确锁定 LangGraph 1.4.8、Checkpoint 1.1.3、Core 1.1.48、Zod 3.25.76，并纳入版本/完整性门禁 |
-| 测试 | `verify` 已包含 AI 工作流、SecretVault 与线索外联 Repository 契约测试；Repository 验证 21 条按行 SQL、commit/rollback、租户条件与全量快照写入为 0 |
-| API 契约 | OpenAPI 与注册路由均保持 167 个操作；跨模块租户隔离 18 |
-| E2E | Playwright 37/37 |
-| 安全 | `npm audit --audit-level=high` 为 0；R-012/R-013 本地实现进入部署验证，历史 Secret Scan 与部署凭证仍待闭环 |
-| 前端性能 | 入口 1.90 kB，核心原型 389.65 kB；XLSX/ECharts/ZRender 已懒加载；384 kB HTML 与页面控制器拆分仍在 R-004/R-008 |
-| 远端 | GitHub `1060392338/goodjob` 为唯一交付远端；Gitee 不再操作 |
+| 前端 | React 19、Vite、TypeScript；首个线索来源领域模块已拆分，Playwright 37/37 |
+| 后端 | Express、TypeScript；OpenAPI 保持 167 个操作，跨模块租户隔离 18 |
+| 数据 | memory/MySQL；线索外联 Repository/UoW 与 AI 工作流 6 张 MySQL 状态表已有契约，真实 MySQL 演练未完成 |
+| 获客管道 | 统一 `LeadIngestionConnector` 管道，CSV/XLSX/XLS、公开网页/搜索、第三方 API Provider 三类接入边界已实现 |
+| 外部副作用 | SMTP 经 `OutboundEmailGateway`；模型经 `ModelGateway`；来源经 Connector/Provider 边界；Mock 验收真实外呼 0 |
+| 凭证安全 | `SecretVault` 与 credential handle 边界；L-0020 credential leaks 0，真实凭证未接入 |
+| AI 编排 | `AiWorkflowEngine` + LangGraph.js 基础完成，但阶段 4 AI 获客功能尚未验收 |
+| 测试 | `verify` 包含 Pipeline、三类 Connector、AI workflow、SecretVault、Repository、前后端和安全门禁 |
+| 安全 | dependency audit 0；R-006/R-013/R-015 仍有真实环境验证项 |
+| 远端 | GitHub `1060392338/goodjob` 为唯一交付远端；禁止操作 Gitee |
 
 ## 最近完成循环
 
-**Loop L-0019：公开网页/搜索 Connector 安全执行边界——已完成**
+**L-0020：第三方 API Provider 插件边界——已完成**
 
-- 关联：`REQ-GJ-LEAD-001 / TASK-GJ-0201`；实现 Commit `3b0c366`；
-- 域名许可、DNS/IP/重定向 SSRF、robots、限流、内容限制/隔离、Prompt 注入信号净化、checkpoint、恢复、幂等和血缘已通过；
-- 专项 PASS：2 个文档、恢复成功、duplicate writes 0、安全拒绝 12、真实外呼 0；
-- `verify` PASS：repository security 169、API 167、tenant 18；audit 0；E2E 37/37；
-- Evidence：`docs/engineering/evidence/L-0019-public-web-search-connector.md`。
+- 关联：`REQ-GJ-LEAD-001 / TASK-GJ-0201`；ADR-0019；Test-first `33e508c`；实现 `c361a26`；
+- Registry、Provider 版本、Mapper、credential handle、分页/cursor、Retry-After、指数退避、请求预算、错误分类、checkpoint 和血缘已通过；
+- 专项 PASS：Provider plugins 1、pages 2、lineage fields 6、error classifications 10、duplicate writes 0、credential leaks 0、真实外呼 0；
+- 完整门禁 PASS：repository security 173、REQ/TASK 16/16、API 167、tenant 18、audit 0、E2E 37/37；
+- Evidence：`docs/engineering/evidence/L-0020-third-party-api-provider-boundary.md`。
 
 ## 当前循环
 
-**L-0020：第三方 API Connector 编排与供应商插件边界——进行中（Test-first/Red 已完成）**
+**L-0021：阶段 3 全量验收与回顾——Ready**
 
-- ADR、Evidence 和完整专项失败契约已建立；真实 Red 为缺少 `api-lead-ingestion-connector.js` 的 `ERR_MODULE_NOT_FOUND`；
-- 统一 Provider 插件边界，不把供应商字段、认证或分页细节泄漏到领域管道；
-- 在 Mock Provider 下覆盖分页、游标、退避、Retry-After、额度、错误分类、checkpoint、恢复、幂等和血缘；
-- 不选择真实供应商，不接真实凭证，不进行真实外呼。
+- 对 L-0017~L-0020 进行跨 Connector 复核，而不是新增供应商功能；
+- 复跑统一 Pipeline、文件、Web、API 四组专项和完整门禁；
+- 审计 REQ/TASK/ADR/Commit/Test/Evidence/风险/回滚/交接；
+- 明确真实客户文件、真实网页许可/网络、真实供应商、真实凭证和真实数据库为 Deferred；
+- 执行清单：`docs/engineering/evidence/L-0021-phase-3-acceptance.md`。
 
-## 当前会话检查点
+## 最新会话检查点
 
-- 稳定基线：Commit `cdf346d`；当前分支 `codex/phase-3-lead-pipeline`。
-- 本地存在未提交的 L-0020 ADR、Evidence、专项测试和脚本/台账变更，禁止 reset/clean。
-- `api-lead-ingestion-connector-test.ts` 已覆盖 Registry、分页/cursor、Mapper/血缘、Pipeline 恢复/幂等、Retry-After、指数退避、最大重试、不可重试错误、预算、无效响应、Secret 拒绝和 checkpoint 篡改。
-- 生产实现 `api-lead-ingestion-connector.ts` 尚不存在；真实 Red 已保存，完整 `verify`/audit/E2E 尚未用于本循环验收。
-- 精确续作顺序见 `HANDOFF.md`，不得把 L-0019 的 PASS 结果误记为 L-0020 已通过。
+- L-0020 Test-first Commit：`33e508c`；实现 Commit：`c361a26`。
+- 专项、build、实现收口 `verify`、audit 和 E2E 均 PASS；文档暂存后再次 `verify` PASS，repository security 174、currentIteration L-0021；`git diff --check` PASS。
+- 首次 `verify` 曾随机命中 Fetch 禁用端口导致一次 `bad port`，未修改代码复跑 PASS；若 L-0021 再现，应登记并修复测试稳定性缺陷。
+- 生产 schema、公开 API、真实 Provider、真实凭证、真实网络调用和真实客户数据变化均为 0。
+- 精确续作顺序见 `HANDOFF.md`；聊天记录不作为恢复前提。
+
 ## 阻塞与持续风险
 
-- GitHub 仓库当前为 Public；是否调整为 Private 需由项目负责人确认。
+- GitHub 仓库当前为 Public；是否调整为 Private 需项目负责人确认。
 - GitHub Actions、历史 Secret Scan 与分支保护尚未形成远端通过证据。
-- 未确认现有部署实例清单，无法证明历史默认凭证已全部失效。
-- `pending` 邮件尚无运维查询/人工确认界面。
-- R-012/R-013：代码和本地门禁已完成；真实部署仍需数据库备份/恢复、迁移状态和密钥托管验证，验证前继续禁止真实 Key。
-- R-005：线索外联已迁移，但其他领域仍可能通过旧 `persistAll` 产生全量覆盖风险。
-- R-014：MySQL 契约已实现；真实 MySQL 迁移、锁等待、断连、版本迁移和备份恢复演练未完成。
-- 第三方线索数据厂商未指定；完整供应商验收无法开始。
+- R-006：真实网页许可、真实网络和阶段 4 Prompt 注入红队未验证。
+- R-013：真实部署密钥治理、备份恢复和供应商额度告警未验证。
+- R-015：真实客户数据回放与真实供应商验收未执行。
+- 其他领域仍可能通过旧 `persistAll` 产生全量覆盖风险；真实 MySQL 演练未完成。
 - 钉钉、企微、飞书当前只保留统一 Adapter 入口与 Mock 计划。
-
-## 阶段 2 收口结论
-
-- L-0014：AI 工作流 MySQL checkpoint、run、审批、Effect 与审计持久化，Commit `9ab50b1`；R-014 保持 Mitigating。
-- L-0015：入口、核心原型、工作簿和图表重依赖分包及 Bundle Budget，Commit `1509f64`；R-008 保持 Mitigating。
-- L-0016：机器可验证追踪门禁和阶段验收，Commit `cddd97f`；阶段 2 Accepted with carry-over。
-- 转移项继续保留原风险状态和发布门禁，不因阶段收口自动关闭。

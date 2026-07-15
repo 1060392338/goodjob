@@ -802,3 +802,27 @@
 - 修复 `L-0017-lead-ingestion-pipeline.md` 的历史编码损坏，恢复目标、Test-first、实现、专项、完整门禁、风险和交接证据。
 - 明确根目录 `DEVELOPMENT_STATUS.md` 仅为历史业务快照，工程状态以 `docs/engineering/` 为准。
 - 文档校验：`FEATURES.json` 可解析；`npm run test:traceability` PASS（16 REQ / 16 TASK，currentIteration L-0020）；`git diff --check` PASS；工程文档编码/占位审计 PASS。
+
+## 2026-07-15 — Loop L-0020：第三方 API Provider 插件边界（完成）
+
+### Implement
+
+- Test-first/Red Commit `33e508c` 保存完整失败契约；实现 Commit `c361a26` 新增 API Provider Registry、版本化插件/Mapper 和统一 Connector。
+- 使用 credential handle，拒绝原始凭证、Secret-like 配置/响应和错误正文透传。
+- 实现 Provider opaque cursor 隔离、上下文绑定 checkpoint、Retry-After、指数退避、最大重试、错误分类和租户级请求预算。
+- 接入统一 Pipeline，验证第二条 Sink 故障恢复、完整重跑和逐记录 API 血缘。
+
+### Verify / Review
+
+- 专项 PASS：Provider plugins 1、pages 2、lineage fields 6、error classifications 10、duplicate writes 0、credential leaks 0、真实外呼 0。
+- backend build PASS。
+- 最终 `npm run verify` PASS：repository security 173、REQ/TASK 16/16、API 167、tenant 18、frontend self-test 44。
+- dependency audit PASS，0 vulnerabilities；Playwright PASS，37/37；`git diff --check` PASS。
+- 文档暂存后再次 `npm run verify` PASS：repository security 174、currentIteration L-0021。
+- 首次组合门禁曾随机命中 Fetch 禁用端口，`ai-config-routes-test.ts` 报一次 `bad port`；未修改代码复跑完整 PASS，移交 L-0021 观察。
+
+### Record / Next
+
+- Evidence：`docs/engineering/evidence/L-0020-third-party-api-provider-boundary.md`。
+- R-006 Open、R-013 Verification、R-015 Mitigating；真实供应商/凭证/网络/客户数据继续 Deferred。
+- 下一循环 L-0021：阶段 3 跨 Connector 全量验收、追踪审计、风险复核和回顾。

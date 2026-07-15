@@ -4,7 +4,7 @@
 
 ## 可恢复结论
 
-阶段 3 已完成 L-0017、L-0018、L-0019。L-0020 已完成 ADR、完整 Test-first 契约和真实 Red，生产实现尚未创建。下一开发会话可直接从本文件恢复，不依赖聊天记录。GitHub 是唯一交付远端，禁止操作 Gitee；GoodJob 现有业务行为是产品基线，不做 MVP 式推倒重写。
+文档现已足以在新会话中恢复开发，不依赖聊天记录。阶段 3 的 L-0017~L-0020 已完成；当前唯一执行入口是 `L-0021` 阶段 3 全量验收与回顾。GitHub 是唯一交付远端，禁止操作 Gitee；GoodJob 现有业务行为是产品基线，不做 MVP 式推倒重写。
 
 ## 当前工作位置
 
@@ -12,125 +12,69 @@
 - 分支：`codex/phase-3-lead-pipeline`
 - GitHub：`https://github.com/1060392338/goodjob.git`
 - 当前阶段：阶段 3——获客数据管道
-- 当前 Loop：`L-0020`（第三方 API Provider 插件边界）
+- 当前 Loop：`L-0021`（阶段 3 全量验收与回顾）
 - 当前 REQ/TASK：`REQ-GJ-LEAD-001 / TASK-GJ-0201`
-- L-0019 稳定收口：`cdf346d`
-- 文档完整性修复：`3f32df7`
-- L-0017 实现：`308cb67`
-- L-0018 实现：`db6c711`
-- L-0019 Test-first：`603c664`、`3058c32`；实现：`3b0c366`
+- Test-first Commit：`33e508c`
+- L-0020 实现 Commit：`c361a26`
+- L-0020 Evidence：`docs/engineering/evidence/L-0020-third-party-api-provider-boundary.md`
+- L-0021 执行清单：`docs/engineering/evidence/L-0021-phase-3-acceptance.md`
 
-## 当前本地工作区（必须保留）
+## L-0020 已完成事实
 
-L-0020 Test-first 变更尚待提交，包含：
+- 已建立 Provider Registry、Provider ID/version、版本化 Mapper 和统一 `LeadIngestionConnector` 边界；
+- 认证只接收受控 `credentialHandle`，拒绝原始 API Key/Token 和 Secret-like 配置/响应；
+- Provider opaque cursor 与 GoodJob checkpoint 隔离，checkpoint 绑定 tenant、connector、Provider、配置和 Mapper 版本；
+- 支持 Retry-After、指数退避、最大重试、错误分类和 tenant + connector + provider 请求预算；
+- Pipeline 故障恢复和完整重跑通过，duplicate writes 0；
+- credential leaks 0，真实外呼 0；
+- 未引入数据库 schema、公开 API、真实 Provider、真实凭证或真实网络变化。
 
-```text
-M  backend/package.json
-M  docs/engineering/DEVELOPMENT_PLAN.md
-M  docs/engineering/FEATURES.json
-M  docs/engineering/HANDOFF.md
-M  docs/engineering/IMPLEMENTATION_LOG.md
-M  docs/engineering/PROJECT_STATUS.md
-?? backend/src/connectors/api-lead-ingestion-connector-test.ts
-?? docs/engineering/adr/ADR-0019-third-party-api-provider-boundary.md
-?? docs/engineering/evidence/L-0020-third-party-api-provider-boundary.md
-```
+## 最新本地验收
 
-下一操作是创建独立 Test-first Commit。不得 reset/clean，不得删除或弱化失败契约。
-
-生产实现当前不存在：
+2026-07-15 在 Windows / Node.js v24.14.0 下：
 
 ```text
-backend/src/connectors/api-lead-ingestion-connector.ts
+npm run test:connector:api-leads --workspace backend   PASS
+npm run build --workspace backend                      PASS
+npm run verify                                         PASS
+npm run audit:dependencies                             PASS，0 vulnerabilities
+npm run test:e2e                                       PASS，37/37
+git diff --check                                       PASS
 ```
 
-## 最近稳定验收：L-0019
+关键指标：repository security 174、REQ/TASK 16/16、OpenAPI operations 167、tenant isolation 18、frontend self-test 44、credential leaks 0、duplicate writes 0、真实外呼 0。
 
-- 安全 Web Connector 专项 PASS；
-- `npm run verify` PASS，repository security 169、API operations 167、tenant isolation 18；
-- dependency audit 0 vulnerabilities；
-- Playwright 37/37；
-- 真实外呼 0；
-- Evidence：`docs/engineering/evidence/L-0019-public-web-search-connector.md`。
-
-这些结果只代表 L-0019，不得当作 L-0020 的验收结果。
-
-## L-0020 Test-first/Red 证据
-
-完整专项契约已覆盖：
-
-1. Registry 注册、ID/version 解析和重复拒绝；
-2. Provider 描述、配置验证、credential handle；
-3. Provider opaque cursor 与 GoodJob cursor/checkpoint 隔离；
-4. Mapper、逐记录 API 血缘、原始响应不持久化；
-5. Pipeline 第二条 Sink 故障、恢复、完整重跑 created 0 / duplicate 2；
-6. Retry-After、指数退避、最大重试；
-7. authentication、permission_denied、invalid_request、rate_limited、quota_exhausted、request_budget_exhausted、timeout、transient、invalid_response、secret_rejected、checkpoint_context_mismatch、invalid_configuration；
-8. tenant + connector + provider 请求预算；
-9. providerVersion、configDigest、mapperVersion、tenantDigest checkpoint 篡改拒绝；
-10. 错误、payload、checkpoint 中 credential/Secret/原始响应泄漏为 0；
-11. Mock Provider，真实外呼 0。
-
-真实 Red：
-
-```text
-命令：npm run test:connector:api-leads --workspace backend
-环境：Windows / Node.js v24.14.0 / NODE_ENV=test
-退出码：1
-结果：ERR_MODULE_NOT_FOUND
-缺少：backend/src/connectors/api-lead-ingestion-connector.js
-真实外呼：0
-```
+首次完整 `verify` 曾因测试服务器随机分配到 Fetch 禁用端口而在 `ai-config-routes-test.ts` 出现一次 `TypeError: fetch failed / bad port`；未修改代码直接复跑后完整 PASS。L-0021 必须复跑门禁；若再次出现，应登记并修复独立测试稳定性缺陷，不能以无限复跑代替验收。
 
 ## 下一会话严格执行顺序
 
-1. 检查 `git status --short --branch` 和最近提交；
-2. 创建独立 Test-first Commit：
+1. 读取本文件、`PROJECT_STATUS.md`、`DEVELOPMENT_PLAN.md`、`FEATURES.json` 和 L-0021 执行清单；
+2. 检查 `git status --short --branch`、`git log --oneline -10`；不得 reset/clean 未识别变更；
+3. 执行四组专项：统一 Pipeline、文件 Connector、Web Connector、API Provider Connector；
+4. 审计三类 Connector 是否统一实现 `LeadIngestionConnector`，并逐项核对规范化、血缘、去重、checkpoint、恢复和租户隔离；
+5. 执行完整 `npm run verify`、dependency audit、E2E 和 `git diff --check`；
+6. 核对 REQ/TASK/ADR/Commit/Test/Evidence/风险/回滚/交接双向追踪；
+7. 将真实客户文件、真实网页许可/网络、真实供应商、真实凭证和真实数据库演练明确标记为 Deferred；
+8. 形成 L-0021 Evidence、阶段回顾和验收结论，创建独立 Commit 并只推送 GitHub；
+9. 只有 L-0021 证据完整后，才能宣布阶段 3 完成并将执行位置切换到阶段 4 AI 获客闭环。
 
-   ```text
-   test(leads): checkpoint L-0020 API provider contract
-   ```
+## L-0021 完成定义
 
-3. 新建 `backend/src/connectors/api-lead-ingestion-connector.ts`；
-4. 按真实失败逐项实现，不删测、不弱化 credential/Secret/checkpoint 隔离；
-5. 专项转绿后执行：
-
-   ```powershell
-   npm run build --workspace backend
-   npm run verify
-   npm run audit:dependencies
-   npm run test:e2e
-   git diff --check
-   ```
-
-6. 暂存实现后再次运行 `npm run verify`，确保 repository security 扫描新文件；
-7. 创建实现 Commit：
-
-   ```text
-   feat(leads): add third-party API provider connector
-   ```
-
-8. 更新 FEATURES、TRACEABILITY、PROJECT_STATUS、HANDOFF、IMPLEMENTATION_LOG、RISK_REGISTER、DEVELOPMENT_PLAN 和 Evidence；
-9. 创建文档收口 Commit并推送 GitHub；
-10. 切换 `currentIteration` 到 `L-0021`，执行阶段 3 全量验收与回顾。
-
-## L-0020 完成定义
-
-- Provider Registry、版本化插件、版本化 Mapper 与统一 Connector 契约转绿；
-- 认证仅使用 credential handle，Secret 泄漏为 0；
-- 分页、Retry-After、指数退避、最大重试、错误分类、额度/预算均有专项测试；
-- checkpoint 上下文绑定，故障可恢复，完整重跑 duplicate writes 0；
-- Mock Provider，真实供应商、真实凭证、真实网络调用均为 0；
-- 专项、build、`verify`、dependency audit、E2E、`git diff --check` 全部通过；
-- REQ/TASK/ADR/Commit/Test/Evidence/风险/回滚/交接完整且一致。
-
-## 剩余阶段 3 工作
-
-- L-0020：第三方 API Provider 插件边界（Test-first/Red 已完成，待实现）；
-- L-0021：三类 Connector 统一契约、阶段门禁、风险复核、Deferred 项和回顾。
-
-L-0021 完成后才可宣布阶段 3 完成，并进入阶段 4 AI 获客闭环。
+- L-0017~L-0020 的验收条件逐项复核完成；
+- 三类 Connector 与统一 Pipeline 专项全部 PASS；
+- 失败恢复、完整重跑、duplicate writes 0、Secret/credential leaks 0、真实外呼 0；
+- `verify`、audit、E2E、`git diff --check` 全部 PASS；
+- 追踪矩阵、风险、回滚、实施日志、Evidence 和项目状态一致；
+- 阶段结论只能是带明确外部 Deferred 项的验收结论，不能把未执行的真实环境验证写成完成。
 
 ## 暂停条件
 
-仅在需要真实供应商选型、真实凭证、真实外呼、不可逆业务规则、生产数据库或真实客户数据时请求确认。其余 Mock/契约开发可自主继续。
+出现以下情况必须暂停并向项目负责人确认：真实供应商选择、真实 API/模型凭证、真实网络采集、真实客户数据、生产数据库迁移、不可逆业务规则变化、公开 API 或 schema 破坏性变更。Mock、fixture、契约测试和文档验收可自主继续。
+
+## 持续风险
+
+- GitHub Actions、历史 Secret Scan、分支保护和部署凭证轮换尚缺远端证据；
+- R-006 保持 Open：真实采集许可、真实网络和阶段 4 Prompt 注入红队未验证；
+- R-013 保持 Verification：真实部署 SecretVault、备份恢复和供应商额度告警未验证；
+- R-015 保持 Mitigating：Mock/fixture 已通过，真实客户数据回放和供应商验收未执行；
+- 钉钉、企微、飞书当前只保留统一 Adapter 入口与 Mock 计划。

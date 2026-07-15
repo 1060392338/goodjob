@@ -58,3 +58,11 @@
 - R-006 保持 `Open`：Mock Web Connector 已通过域名许可、SSRF、robots、限流和内容/Prompt 注入隔离测试；真实许可审查、真实网络 Transport 与阶段 4 模型输入红队仍未执行。
 - R-015 保持 `Mitigating`：网页来源 checkpoint、故障恢复、完整重跑 duplicate writes 0 和逐记录血缘已通过；真实数据回放与供应商验收继续 Deferred。
 - L-0019 无真实网络、真实凭证、真实供应商或数据库迁移，真实外呼 0。
+
+## 2026-07-15 L-0020 完成风险复核
+
+- R-006 保持 `Open`：Mock API Provider 不引入真实网页采集；真实许可/网络和阶段 4 Prompt 注入红队仍未验证。
+- R-013 保持 `Verification`：credential handle、Secret-like 配置/响应拒绝和泄漏 0 已通过；真实部署 SecretVault、备份恢复、供应商额度告警和密钥轮换仍待外部验证。
+- R-015 保持 `Mitigating`：API Provider checkpoint 上下文绑定、故障恢复、完整重跑 duplicate writes 0 和逐记录血缘已通过；真实客户数据与真实供应商验收继续 Deferred。
+- 首次完整 `verify` 曾因动态测试端口随机命中 Fetch 禁用端口出现一次 `bad port`，未修改代码复跑 PASS；L-0021 若再现必须登记并修复独立测试稳定性缺陷。
+- L-0020 无真实网络、真实凭证、真实供应商、真实客户数据、数据库迁移、schema 或公开 API 变化，真实外呼 0。
