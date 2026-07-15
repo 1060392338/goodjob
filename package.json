@@ -15,7 +15,8 @@
     "test:dependency-policy": "node scripts/dependency-policy-check.mjs",
     "audit:dependencies": "npm audit --audit-level=high --registry=https://registry.npmjs.org",
     "test:routes": "npm run test:routes --workspace backend",
-    "test:traceability": "node scripts/engineering-traceability-check.mjs"
+    "test:traceability": "node scripts/engineering-traceability-check.mjs",
+    "test:phase3-acceptance": "node scripts/phase-3-acceptance-check.mjs"
   },
   "workspaces": [
     "backend",

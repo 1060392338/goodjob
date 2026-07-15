@@ -4,7 +4,7 @@
 
 ## 可恢复结论
 
-文档现已足以在新会话中恢复开发，不依赖聊天记录。阶段 3 的 L-0017~L-0020 已完成；当前唯一执行入口是 `L-0021` 阶段 3 全量验收与回顾。GitHub 是唯一交付远端，禁止操作 Gitee；GoodJob 现有业务行为是产品基线，不做 MVP 式推倒重写。
+文档现已足以在新会话中恢复开发，不依赖聊天记录。阶段 3 的 L-0017~L-0020 已完成；当前唯一执行入口是 `L-0021` 阶段 3 全量验收与回顾。L-0021 已完成 ADR/Test-first 和真实 Red，尚未转绿。GitHub 是唯一交付远端，禁止操作 Gitee；GoodJob 现有业务行为是产品基线，不做 MVP 式推倒重写。
 
 ## 当前工作位置
 
@@ -17,6 +17,7 @@
 - Test-first Commit：`33e508c`
 - L-0020 实现 Commit：`c361a26`
 - L-0020 Evidence：`docs/engineering/evidence/L-0020-third-party-api-provider-boundary.md`
+- L-0021 ADR：`docs/engineering/adr/ADR-0020-phase-3-machine-verifiable-acceptance.md`
 - L-0021 执行清单：`docs/engineering/evidence/L-0021-phase-3-acceptance.md`
 
 ## L-0020 已完成事实
@@ -45,6 +46,13 @@ git diff --check                                       PASS
 关键指标：repository security 174、REQ/TASK 16/16、OpenAPI operations 167、tenant isolation 18、frontend self-test 44、credential leaks 0、duplicate writes 0、真实外呼 0。
 
 首次完整 `verify` 曾因测试服务器随机分配到 Fetch 禁用端口而在 `ai-config-routes-test.ts` 出现一次 `TypeError: fetch failed / bad port`；未修改代码直接复跑后完整 PASS。L-0021 必须复跑门禁；若再次出现，应登记并修复独立测试稳定性缺陷，不能以无限复跑代替验收。
+
+## L-0021 Test-first 检查点
+
+- 新增 `npm run test:phase3-acceptance`，校验统一 Connector、五个 Loop、追踪、Evidence、风险、回滚、Deferred 和 L-0022 交接；
+- 首次运行退出码 1，真实失败 24 项；
+- 当前阶段状态仍为 in_progress、L-0021 仍未 Done、根 verify 尚未接入新门禁，这些是预期 Red；
+- 下一步必须按失败项转绿，不得删除或弱化阶段完成条件。
 
 ## 下一会话严格执行顺序
 

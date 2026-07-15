@@ -826,3 +826,21 @@
 - Evidence：`docs/engineering/evidence/L-0020-third-party-api-provider-boundary.md`。
 - R-006 Open、R-013 Verification、R-015 Mitigating；真实供应商/凭证/网络/客户数据继续 Deferred。
 - 下一循环 L-0021：阶段 3 跨 Connector 全量验收、追踪审计、风险复核和回顾。
+
+## 2026-07-15 — Loop L-0021：阶段 3 全量验收（Test-first/Red）
+
+### Register / Test-first
+
+- 新增 ADR-0020，决定以机器门禁验证阶段 3 状态、统一 Connector 契约、追踪、外部 Deferred 和 L-0022 交接。
+- 新增 `scripts/phase-3-acceptance-check.mjs` 与根命令 `npm run test:phase3-acceptance`，暂不接入 `verify`，等待真实 Red 转绿。
+- 三类 Connector 源码均已被门禁识别为实现 `LeadIngestionConnector`。
+
+### Red
+
+- 首次运行退出码 1，返回 `Phase 3 acceptance FAILED`，共 24 个真实失败项。
+- 失败覆盖：根 verify 未接入、REQ 状态/完成元数据、L-0021 状态、追踪 Done、L-0022 交接、统一验收结论、完整门禁指标、风险、回滚和 Test-first Commit。
+- 未修改业务代码、未真实外呼、未使用真实凭证或客户数据。
+
+### Next
+
+- 先创建独立 Test-first Commit，再执行四组专项和全量门禁；按实际结果更新阶段状态和 Evidence，使验收门禁转绿。

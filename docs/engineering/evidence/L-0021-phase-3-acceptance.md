@@ -2,12 +2,29 @@
 
 - 日期：2026-07-15
 - 关联：REQ-GJ-LEAD-001 / TASK-GJ-0201
-- 状态：Ready，尚未执行
+- ADR：ADR-0020
+- 状态：Test-first（真实 Red 已确认，验收修正尚未开始）
 - 输入 Evidence：L-0017、L-0018、L-0019、L-0020
 
 ## 目标
 
 对阶段 3 已交付的统一获客管道、文件 Connector、Web Connector 和 API Provider Connector 做跨切片验收。此 Loop 以证据复核和阶段结论为主，不选择真实供应商，不接真实凭证，不采集真实客户数据。
+
+## Test-first 契约
+
+新增 `npm run test:phase3-acceptance`，先要求阶段状态、统一 Connector 契约、追踪、Evidence、风险、回滚、外部 Deferred 和 L-0022 交接全部成立。测试必须在阶段台账尚未收口时真实失败，再按失败项逐项修正；不得删除检查或提前伪造通过。
+
+## 真实 Red 证据
+
+- 命令：`npm run test:phase3-acceptance`
+- 环境：Windows / Node.js v24.14.0
+- 退出码：1
+- 结果：`Phase 3 acceptance FAILED`
+- 真实失败项：24 项
+
+失败准确指出：门禁尚未纳入根 `verify`；REQ-GJ-LEAD-001 尚为 in_progress 且缺 completedAt/结构化 verification；L-0021 尚为 ready；追踪矩阵尚非 Done；currentIteration 尚为 L-0021；状态、计划、交接尚未切换 L-0022；各权威文档尚缺统一验收结论；Evidence 尚缺完整门禁、风险、回滚和 Test-first Commit。
+
+该 Red 来自阶段尚未收口的真实状态，没有删除测试、跳过检查或放宽验收条件。真实外呼 0。
 
 ## 验收步骤
 

@@ -502,9 +502,10 @@
         "docs/engineering/adr/ADR-0016-lead-ingestion-pipeline.md",
         "docs/engineering/adr/ADR-0017-csv-excel-lead-connector.md",
         "docs/engineering/adr/ADR-0018-public-web-search-connector.md",
-        "docs/engineering/adr/ADR-0019-third-party-api-provider-boundary.md"
+        "docs/engineering/adr/ADR-0019-third-party-api-provider-boundary.md",
+        "docs/engineering/adr/ADR-0020-phase-3-machine-verifiable-acceptance.md"
       ],
-      "note": "L-0017~L-0020 已完成并有独立 Test-first、实现、专项测试和完整门禁证据。当前进入 L-0021 阶段 3 全量验收与回顾。真实客户文件、真实网页许可/网络、真实供应商和真实凭证继续 Deferred，不得混报完成。",
+      "note": "L-0017~L-0020 已完成。L-0021 已建立 ADR-0020 和机器验收 Test-first 契约，真实 Red 24 项已确认；下一步按失败项完成阶段收口。真实客户文件、真实网页许可/网络、真实供应商和真实凭证继续 Deferred。",
       "increments": [
         {
           "loop": "L-0017",
@@ -537,8 +538,8 @@
         },
         {
           "loop": "L-0021",
-          "status": "ready",
-          "verification": "Pending: phase 3 cross-connector acceptance, traceability audit, risk review and explicit deferred external validation"
+          "status": "in_progress",
+          "verification": "Test-first Red confirmed: phase3 acceptance check failed on 24 truthful incomplete-state conditions; real outbound calls 0; acceptance remediation pending"
         }
       ]
     },
