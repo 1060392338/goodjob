@@ -7,8 +7,8 @@
 - 仓库：`C:\Users\Administrator\Documents\Codex\2026-07-13\hi\GoodJob`
 - 分支：`codex/phase-1-route-modularization`
 - GitHub：`https://github.com/1060392338/goodjob.git`
-- 当前 Loop：L-0016（阶段 2 Accepted with carry-over）
-- L-0016 实现 Commit：`cddd97f`
+- 当前 Loop：L-0017（阶段 3 获客数据管道基础）
+- 阶段 2 收口 Commit：`60cf336`
 - 禁止推送 Gitee `origin`。
 
 ## L-0016 已完成内容
@@ -30,7 +30,7 @@
 - `npm run audit:dependencies`：0 vulnerabilities。
 - `npm run test:e2e`：37/37。
 
-## 下一入口：L-0017
+## 当前执行：L-0017
 
 目标：阶段 3 获客数据管道基础与统一接入契约。
 

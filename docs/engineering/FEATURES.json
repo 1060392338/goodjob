@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0016",
+  "currentIteration": "L-0017",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -472,7 +472,7 @@
       "task": "TASK-GJ-0201",
       "title": "统一 LeadSourceConnector 与数据血缘",
       "phase": 3,
-      "status": "backlog",
+      "status": "in_progress",
       "priority": "P0",
       "acceptance": [
         "CSV/Excel、网页/搜索、第三方 API 使用统一标准化管道",
@@ -480,18 +480,21 @@
         "连接器支持分页、限流、重试、检查点和幂等"
       ],
       "tests": [
-        "connector contract",
-        "idempotency",
-        "resume from checkpoint"
+        "npm run test:pipeline:lead-ingestion --workspace backend",
+        "npm run verify",
+        "npm run audit:dependencies",
+        "npm run test:e2e"
       ],
       "evidence": [
-        "docs/engineering/evidence/L-0009-lead-source-connector.md"
+        "docs/engineering/evidence/L-0009-lead-source-connector.md",
+        "docs/engineering/evidence/L-0017-lead-ingestion-pipeline.md"
       ],
       "design": [
         "docs/engineering/adr/ADR-0003-external-adapters.md",
-        "docs/engineering/adr/ADR-0008-lead-source-connector-boundary.md"
+        "docs/engineering/adr/ADR-0008-lead-source-connector-boundary.md",
+        "docs/engineering/adr/ADR-0016-lead-ingestion-pipeline.md"
       ],
-      "note": "L-0009 只完成配置和连接测试前置边界；标准化管道、完整分页/检查点、重试、幂等和来源证据仍未完成，状态保持 backlog。"
+      "note": "L-0009 完成配置与连接测试前置边界；L-0017 正在建立统一标准化、血缘、去重、检查点和失败恢复契约。CSV/Excel、网页/搜索、第三方 API 的具体 Connector 分别由 L-0018~L-0020 交付。"
     },
     {
       "id": "REQ-GJ-AI-LEAD-001",

@@ -2,8 +2,8 @@
 
 更新时间：2026-07-15
 当前分支：`codex/phase-1-route-modularization`
-当前阶段：阶段 2——已验收（带明确转移项）
-整体状态：阶段 3 准备就绪
+当前阶段：阶段 3——获客数据管道
+整体状态：L-0017 进行中
 
 ## 阶段门禁概览
 
@@ -39,23 +39,19 @@
 
 ## 当前循环
 
-**Loop L-0016：阶段 2 全量验收与收口——本地 DoD 完成**
+**Loop L-0017：统一获客数据管道基础——进行中**
 
-- 关联：`REQ-GJ-ENG-AUDIT-001 / TASK-GJ-0009`；实现 Commit：`cddd97f`；设计：ADR-0015；
-- 追踪门禁：16 个 REQ、16 个 TASK 唯一，阶段 2 的 7 个 Done 项均具备完成日期、结构化验证、设计、证据和本地有效实现 Commit；
-- 全量验收：`npm run verify` PASS；API 167；tenant isolation 18；repository security 153；frontend self-test 44；Bundle Budget PASS；
-- 发布前检查：dependency audit 0 vulnerabilities；Playwright 37/37；测试真实外呼 0；
-- 验收结论：阶段 2 **Accepted with carry-over**，不将剩余路由/UI 拆分、全 Store 迁移、真实 MySQL/部署/CI 演练混报为完成；
-- 证据：`evidence/L-0016-phase-2-acceptance.md`。
+- 关联：`REQ-GJ-LEAD-001 / TASK-GJ-0201`；设计：ADR-0016；
+- 范围：标准化、稳定身份、逐记录血缘、幂等 Sink、上下文绑定检查点和失败恢复；
+- Test-first：先建立专项失败测试，再实现 Pipeline；
+- 边界：不接真实供应商、不使用真实凭证、不新增真实网络调用；
+- 后续：L-0018 CSV/Excel、L-0019 网页/搜索、L-0020 第三方 API、L-0021 阶段验收。
 
 ## 下一循环
 
-**L-0017：阶段 3 获客数据管道基础与统一接入契约**
+**L-0018：CSV/Excel Connector 接入统一管道**
 
-1. 登记阶段 3 的规范化、血缘、去重、检查点和幂等需求；
-2. 先建立 Connector Contract 与失败测试，再实现 CSV/Excel、网页/搜索、第三方 API 的统一执行边界；
-3. 真实供应商和凭证未确定前只运行 Mock/契约测试，不产生真实外呼；
-4. 每个 Connector 切片独立 Commit、证据、验收和回滚说明。
+仅在 L-0017 的统一契约通过专项及全量门禁后进入。
 
 ## 阻塞与持续风险
 
