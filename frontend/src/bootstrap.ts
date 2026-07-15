@@ -1,0 +1,1 @@
+void import("./prototype-api");

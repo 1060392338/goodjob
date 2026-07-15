@@ -1,7 +1,7 @@
 type Role = "sales" | "manager" | "admin" | "super_admin";
 type DashboardPeriod = "today" | "week" | "month";
 
-import { downloadWorkbook, readWorkbookRows } from "./workbook";
+import type { DashboardChartController } from "./dashboard-chart";
 import {
   createLeadSourceCenterClient,
   markLeadSourceSelected,
@@ -10,15 +10,27 @@ import {
   toggleLeadSourceSelection,
   type LeadProviderStatus
 } from "./lead-source-center";
-import * as echarts from "echarts/core";
-import { LineChart } from "echarts/charts";
-import { GridComponent, TooltipComponent } from "echarts/components";
-import { SVGRenderer } from "echarts/renderers";
+let dashboardLeadFunnelChart: DashboardChartController | null = null;
+let dashboardLeadFunnelRenderVersion = 0;
+type WorkbookModule = typeof import("./workbook");
+let workbookModulePromise: Promise<WorkbookModule> | null = null;
 
-echarts.use([LineChart, GridComponent, TooltipComponent, SVGRenderer]);
+function loadWorkbookModule() {
+  workbookModulePromise ||= import("./workbook").catch((error) => {
+    workbookModulePromise = null;
+    throw error;
+  });
+  return workbookModulePromise;
+}
 
-let dashboardLeadFunnelChart: ReturnType<typeof echarts.init> | null = null;
-let dashboardLeadFunnelResizeObserver: ResizeObserver | null = null;
+async function downloadWorkbook(...args: Parameters<WorkbookModule["downloadWorkbook"]>) {
+  return (await loadWorkbookModule()).downloadWorkbook(...args);
+}
+
+async function readWorkbookRows(...args: Parameters<WorkbookModule["readWorkbookRows"]>) {
+  return (await loadWorkbookModule()).readWorkbookRows(...args);
+}
+
 let dashboardRefreshPromise: Promise<void> | null = null;
 const DASHBOARD_LIVE_REFRESH_MS = 10_000;
 
@@ -1988,8 +2000,7 @@ function formatTodoTime(value = ""): string {
 function renderLeadFunnel(summary: DashboardSummary) {
   const funnel = qs<HTMLElement>("#dashboardLeadFunnel");
   if (!funnel) return;
-  dashboardLeadFunnelResizeObserver?.disconnect();
-  dashboardLeadFunnelResizeObserver = null;
+  const renderVersion = ++dashboardLeadFunnelRenderVersion;
   dashboardLeadFunnelChart?.dispose();
   dashboardLeadFunnelChart = null;
   const data = summary.leadFunnel;
@@ -2030,123 +2041,23 @@ function renderLeadFunnel(summary: DashboardSummary) {
 
   const chartHost = qs<HTMLElement>("[data-lead-funnel-chart]", funnel);
   if (chartHost) {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const maxCount = Math.max(1, ...data.stages.map((stage) => stage.count));
-    const chart = echarts.init(chartHost, undefined, { renderer: "svg" });
-    dashboardLeadFunnelChart = chart;
-    chart.setOption({
-      animation: !prefersReducedMotion,
-      animationDuration: 720,
-      animationDurationUpdate: 350,
-      animationEasing: "cubicOut",
-      grid: {
-        left: 22,
-        right: 22,
-        top: 28,
-        bottom: 8,
-        containLabel: false
-      },
-      tooltip: {
-        trigger: "item",
-        confine: true,
-        backgroundColor: "#172033",
-        borderWidth: 0,
-        padding: [8, 10],
-        textStyle: { color: "#ffffff", fontSize: 12 },
-        formatter: (params: { data: { label: string; value: number; conversionRate: number } }) =>
-          `${escapeHtml(params.data.label)}<br/><b>${params.data.value} 条</b> · 占进入 ${params.data.conversionRate}%`
-      },
-      xAxis: {
-        type: "category",
-        boundaryGap: false,
-        data: data.stages.map((stage) => stage.label),
-        axisLine: { show: false },
-        axisTick: { show: false },
-        axisLabel: { show: false },
-        splitLine: { show: false }
-      },
-      yAxis: {
-        type: "value",
-        min: 0,
-        max: Math.max(2, Math.ceil(maxCount * 1.28)),
-        show: false
-      },
-      series: [{
-        type: "line",
-        smooth: 0.34,
-        smoothMonotone: "x",
-        symbol: "circle",
-        symbolSize: 8,
-        showSymbol: true,
-        connectNulls: true,
-        lineStyle: {
-          width: 2,
-          color: "#8197c8",
-          cap: "round",
-          shadowBlur: 3,
-          shadowColor: "rgba(64, 88, 145, .11)"
-        },
-        areaStyle: {
-          opacity: 1,
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: "rgba(81, 106, 170, .075)" },
-            { offset: 0.72, color: "rgba(81, 106, 170, .018)" },
-            { offset: 1, color: "rgba(49, 87, 213, 0)" }
-          ])
-        },
-        label: {
-          show: true,
-          position: "top",
-          distance: 7,
-          color: "#172033",
-          fontSize: 13,
-          fontWeight: 700,
-          formatter: (params: { value: number }) => String(params.value)
-        },
-        emphasis: {
-          scale: 1.45,
-          focus: "self",
-          itemStyle: {
-            borderWidth: 3,
-            borderColor: "#ffffff",
-            shadowBlur: 12,
-            shadowColor: "rgba(23, 32, 51, .22)"
-          }
-        },
-        data: data.stages.map((stage) => ({
-          value: stage.count,
-          name: stage.label,
-          key: stage.key,
-          label: stage.label,
-          conversionRate: stage.conversionRate,
-          itemStyle: {
-            color: colors[stage.key] || "#3157d5",
-            borderWidth: 2,
-            borderColor: "#ffffff",
-            shadowBlur: stage.key === "pending" ? 8 : 4,
-            shadowColor: `${colors[stage.key] || "#3157d5"}55`
-          }
-        }))
-      }]
-    });
-    chart.on("click", (params) => {
-      const stage = params.data as { key?: string } | undefined;
-      openLeadFunnelStage(stage?.key || "entered");
-    });
     const travelLight = qs<HTMLElement>("[data-lead-funnel-light]", funnel);
-    const positionTravelLight = () => {
-      chart.resize();
-      if (!travelLight || prefersReducedMotion) return;
-      travelLight.style.offsetPath = buildLeadFlowMotionPath(
-        chartHost.clientWidth,
-        chartHost.clientHeight,
-        data.stages.map((stage) => stage.count),
-        Math.max(2, Math.ceil(maxCount * 1.28))
-      );
-    };
-    positionTravelLight();
-    dashboardLeadFunnelResizeObserver = new ResizeObserver(positionTravelLight);
-    dashboardLeadFunnelResizeObserver.observe(chartHost);
+    void import("./dashboard-chart")
+      .then(({ createDashboardLeadFunnelChart }) => {
+        if (renderVersion !== dashboardLeadFunnelRenderVersion || !chartHost.isConnected) return;
+        dashboardLeadFunnelChart = createDashboardLeadFunnelChart({
+          host: chartHost,
+          travelLight,
+          stages: data.stages,
+          colors,
+          onStageClick: openLeadFunnelStage
+        });
+      })
+      .catch(() => {
+        if (renderVersion === dashboardLeadFunnelRenderVersion && chartHost.isConnected) {
+          chartHost.dataset.chartLoadState = "failed";
+        }
+      });
   }
 
   qsa<HTMLButtonElement>("[data-lead-funnel-key]", funnel).forEach((button) => {
@@ -2154,33 +2065,6 @@ function renderLeadFunnel(summary: DashboardSummary) {
       openLeadFunnelStage(button.dataset.leadFunnelKey || "entered");
     });
   });
-}
-
-function buildLeadFlowMotionPath(width: number, height: number, values: number[], maxValue: number) {
-  const left = 22;
-  const right = 22;
-  const top = 28;
-  const bottom = 8;
-  const plotWidth = Math.max(1, width - left - right);
-  const plotHeight = Math.max(1, height - top - bottom);
-  const points = values.map((value, index) => ({
-    x: left + (values.length === 1 ? plotWidth / 2 : (index * plotWidth) / (values.length - 1)),
-    y: top + (1 - value / maxValue) * plotHeight
-  }));
-  if (!points.length) return "none";
-  let path = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const previous = points[index - 1] || points[index];
-    const current = points[index];
-    const next = points[index + 1];
-    const after = points[index + 2] || next;
-    const control1X = current.x + (next.x - previous.x) / 10;
-    const control1Y = current.y + (next.y - previous.y) / 10;
-    const control2X = next.x - (after.x - current.x) / 10;
-    const control2Y = next.y - (after.y - current.y) / 10;
-    path += ` C ${control1X.toFixed(2)} ${control1Y.toFixed(2)}, ${control2X.toFixed(2)} ${control2Y.toFixed(2)}, ${next.x.toFixed(2)} ${next.y.toFixed(2)}`;
-  }
-  return `path("${path}")`;
 }
 
 function openLeadFunnelStage(key: string) {
@@ -5267,7 +5151,7 @@ async function exportCommission() {
   };
   const toChineseRows = (rows: Record<string, unknown>[], columns: readonly (readonly [string, string])[]) =>
     rows.map((row) => Object.fromEntries(columns.map(([key, label]) => [label, translateExportValue(key, row[key])])));
-  downloadWorkbook(`GoodJob-提成对账-${state.commissionMonth}.xlsx`, [
+  await downloadWorkbook(`GoodJob-提成对账-${state.commissionMonth}.xlsx`, [
     {
       name: "人员月度汇总",
       rows: toChineseRows(result.summaryRows, summaryColumns),
@@ -6926,7 +6810,7 @@ async function exportCustomers() {
       下一提醒: customer.nextReminder,
       企微绑定: customer.wecomBound ? "已绑定" : "未绑定"
     }));
-    downloadWorkbook(`GoodJob客户清单-${Date.now()}.xlsx`, [{ name: "客户清单", rows }]);
+    await downloadWorkbook(`GoodJob客户清单-${Date.now()}.xlsx`, [{ name: "客户清单", rows }]);
     state.jobs.unshift(result.job);
     renderJobs(state.jobs);
     toast(`客户已导出：${rows.length} 行`);
@@ -6935,8 +6819,8 @@ async function exportCustomers() {
   }
 }
 
-function downloadCustomerTemplate() {
-  downloadWorkbook("GoodJob客户导入模板.xlsx", [{
+async function downloadCustomerTemplate() {
+  await downloadWorkbook("GoodJob客户导入模板.xlsx", [{
     name: "客户导入模板",
     headers: ["公司名", "国家", "联系人", "阶段", "预计金额", "健康度", "下一提醒", "企微绑定"]
   }]);
@@ -7787,7 +7671,7 @@ async function exportQuestionBank() {
       难度: question.difficulty === "hard" ? "高阶" : question.difficulty === "easy" ? "基础" : "应用",
       解析: question.explanation
     }));
-    downloadWorkbook(`GoodJob基础题库-${Date.now()}.xlsx`, [{ name: "基础题库", rows }]);
+    await downloadWorkbook(`GoodJob基础题库-${Date.now()}.xlsx`, [{ name: "基础题库", rows }]);
     toast(`题库已导出：${rows.length} 道题`);
   } catch (error) {
     toast(error instanceof Error ? error.message : "题库导出失败", "error");
@@ -9823,7 +9707,7 @@ async function createLeadFinderTodos(button?: HTMLButtonElement) {
   }
 }
 
-function exportLeadFinderRows() {
+async function exportLeadFinderRows() {
   const rows = collectLeadFinderRows();
   const source = rows.length ? rows : state.websiteOpportunities;
   if (!source.length) {
@@ -9841,7 +9725,7 @@ function exportLeadFinderRows() {
     "评分": "status" in item ? leadFinderScore(item as WebsiteOpportunity) : "",
     "状态": "status" in item ? ((item as WebsiteOpportunity).status === "synced" ? "已同步" : "待确认") : "待确认"
   }));
-  downloadWorkbook(`GoodJob智能搜客结果-${Date.now()}.xlsx`, [{ name: "智能搜客结果", rows: rowsToExport }]);
+  await downloadWorkbook(`GoodJob智能搜客结果-${Date.now()}.xlsx`, [{ name: "智能搜客结果", rows: rowsToExport }]);
   toast("搜客结果已导出");
 }
 

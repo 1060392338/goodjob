@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5188",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run test:bundle-budget",
     "test": "npm run test:self && npm run test:lead-source-center",
     "test:e2e": "playwright test",
     "test:workbook-security": "tsx src/workbook-test.ts",
     "test:self": "tsx src/self-test.ts",
-    "test:lead-source-center": "tsx src/lead-source-center-test.ts"
+    "test:lead-source-center": "tsx src/lead-source-center-test.ts",
+    "test:bundle-budget": "node scripts/bundle-budget.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",

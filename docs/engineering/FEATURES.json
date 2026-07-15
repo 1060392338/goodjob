@@ -257,6 +257,32 @@
       "completedAt": "2026-07-15"
     },
     {
+      "id": "REQ-GJ-FE-PERF-001",
+      "task": "TASK-GJ-0008",
+      "title": "渐进式前端动态分包与 Bundle Budget",
+      "phase": 2,
+      "status": "in_progress",
+      "priority": "P1",
+      "acceptance": [
+        "生产入口 JavaScript 不超过 20 KiB，并动态加载现有原型业务",
+        "工作簿/XLSX 和仪表盘 ECharts/ZRender 不进入首屏静态依赖图",
+        "prototype-api 动态核心包不超过 450 KiB，存在可重复 Bundle Budget 门禁",
+        "现有 URL、DOM 标识、权限和业务行为不回归，Playwright 37/37"
+      ],
+      "tests": [
+        "npm run test:bundle-budget --workspace frontend",
+        "npm run verify",
+        "npm run test:e2e",
+        "npm run audit:dependencies"
+      ],
+      "design": [
+        "docs/engineering/adr/ADR-0014-frontend-progressive-code-splitting.md"
+      ],
+      "evidence": [
+        "docs/engineering/evidence/L-0015-frontend-progressive-code-splitting.md"
+      ]
+    },
+    {
       "id": "REQ-GJ-AI-PERSIST-001",
       "task": "TASK-GJ-0103",
       "title": "Persist LangGraph workflow state, approvals, effects, and audit in MySQL",

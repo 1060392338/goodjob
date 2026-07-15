@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
 
 const prototype = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const bootstrap = readFileSync(new URL("./bootstrap.ts", import.meta.url), "utf8");
 const apiLayer = readFileSync(new URL("./prototype-api.ts", import.meta.url), "utf8");
+const dashboardChart = readFileSync(new URL("./dashboard-chart.ts", import.meta.url), "utf8");
 const leadSourceCenter = readFileSync(new URL("./lead-source-center.ts", import.meta.url), "utf8");
-const implementationSources = [prototype, apiLayer, leadSourceCenter];
+const implementationSources = [prototype, bootstrap, apiLayer, dashboardChart, leadSourceCenter];
 
 const required = [
   "login-screen",
@@ -13,7 +15,10 @@ const required = [
   "id=\"exam\"",
   "id=\"tools\"",
   "id=\"settings\"",
-  "prototype-api.ts",
+  "/src/bootstrap.ts",
+  "import(\"./prototype-api\")",
+  "import(\"./workbook\")",
+  "import(\"./dashboard-chart\")",
   "/api/auth/login",
   "/api/dashboard/summary",
   "DASHBOARD_LIVE_REFRESH_MS",
