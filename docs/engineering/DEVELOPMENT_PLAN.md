@@ -39,7 +39,7 @@
 
 - 阶段 0 的本地代码门禁已完成；远端 GitHub 历史扫描、Actions 和部署凭证轮换仍在验证。
 - 阶段 1 已由现有 self-test、security test、167 个 OpenAPI 操作和 37 条 E2E 建立首版行为基线。
-- 当前处于阶段 2：后端 30 个 API、外部 Gateway/Connector、首个前端领域模块和 `AiWorkflowEngine` 编排技术验证已完成；SecretVault 凭证安全已完成本地 DoD；Repository/Unit of Work 与 MySQL 工作流状态已完成本地 DoD；当前进入前端动态分包，阶段收口仍待完成。`REQ-GJ-AI-ORCH-001 / TASK-GJ-0102` 只形成阶段 4/5 前置边界，不代表 AI 功能阶段已完成。
+- 阶段 2 已于 L-0016 完成范围验收：后端 30 个 API、外部 Gateway/Connector、首个前端领域模块、SecretVault、线索外联 Repository/Unit of Work、LangGraph 工作流持久化和前端动态分包均有独立证据。验收结论为 Accepted with carry-over；剩余超大模块、全 Store 迁移、真实 MySQL/部署/CI 演练没有混报完成。下一执行位置为阶段 3。`REQ-GJ-AI-ORCH-001 / TASK-GJ-0102` 只形成阶段 4/5 前置边界，不代表 AI 功能阶段已完成。
 
 ## 变更控制
 
@@ -48,16 +48,22 @@
 - AI 和外部平台在 Mock/契约测试未通过前不得接真实密钥。
 - 部署平台尚未选定，不阻塞模块与契约开发，但生产发布阶段必须补齐部署 ADR。
 
-## 阶段 2 当前增量：L-0013
+## 阶段 2 验收结论：L-0013~L-0016
 
-- 已完成线索外联 Repository/Unit of Work 增量持久化切片，Commit `a70359b`。
-- 验收：Memory/MySQL 同契约、21 条按行 SQL、commit 2/rollback 2、全量快照写入 0、API 167、tenant 18、E2E 37/37、audit 0。
-- R-005 仅部分缓解，不把单领域迁移误报为全 Store 完成。
-- 下一切片 L-0014：AI 工作流 MySQL 状态、恢复与并发幂等；随后 L-0015 前端分包，L-0016 阶段 2 收口。
+- L-0013：线索外联 Repository/Unit of Work 增量持久化，Commit `a70359b`。
+- L-0014：LangGraph MySQL Checkpointer、运行/审批/Effect/审计持久化，Commit `9ab50b1`。
+- L-0015：入口与重依赖动态分包、manifest 和 Bundle Budget，Commit `1509f64`。
+- L-0016：机器可验证追踪门禁、全量回归、风险复核和阶段回顾，Commit `cddd97f`。
+- 阶段结论：Accepted with carry-over。R-004/R-005/R-008/R-011/R-012/R-013/R-014 继续按登记状态跟踪，Critical 风险未部署验证前禁止正式发布。
 
-## 阶段 2 当前增量：L-0014 / L-0015 / L-0016
+## 阶段 3 建议切片
 
-- L-0014 已完成：LangGraph MySQL Checkpointer、运行/审批/Effect/审计持久化、跨实例恢复、并发冲突和 Secret 拒绝；实现 Commit `9ab50b1`。
-- L-0015 已完成重依赖与特性边界分包：入口 1.90 kB、核心原型 389.65 kB，XLSX/ECharts/ZRender 按需加载，Bundle Budget 自动执行；实现 Commit `1509f64`。
-- L-0015 不混报逐页面控制器分包完成：384 kB 静态 HTML 和核心原型继续由 R-004/R-008 跟踪。
-- 当前 L-0016：执行阶段 2 完整追踪审计、风险复核、全量回归、验收和回顾；全 Store Repository 迁移、真实 MySQL/部署验证及剩余超大模块必须明确转入后续阶段。
+| Loop | 小阶段 | 核心验收 |
+|---|---|---|
+| L-0017 | 统一获客管道领域模型、规范化、血缘、去重和检查点契约 | 同一输入重复执行不新增重复线索；来源与原始记录可反查；失败可从检查点恢复 |
+| L-0018 | CSV/Excel Connector 接入统一管道 | 格式兼容、安全限制、字段映射、批次回滚与部分失败报告通过 |
+| L-0019 | 公开网页/搜索 Connector 安全执行边界 | 域名许可、SSRF、限流、robots/许可记录、内容隔离和断点续跑通过 |
+| L-0020 | 第三方 API Connector 编排与供应商插件边界 | 分页、退避、额度、幂等、检查点和错误分类在 Mock Provider 下通过 |
+| L-0021 | 阶段 3 全量验收与回顾 | 三类 Connector 通过统一契约；真实供应商未指定项明确 Deferred，不混报 |
+
+真实供应商、真实网络和真实凭证只在用户确认后进入验收；此前各 Loop 使用 Mock/契约测试并保持真实外呼为 0。

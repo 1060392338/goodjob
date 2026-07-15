@@ -46,7 +46,7 @@
       "task": "TASK-GJ-0009",
       "title": "机器可验证的追踪完整性与阶段 2 收口",
       "phase": 2,
-      "status": "in_progress",
+      "status": "done",
       "priority": "P1",
       "acceptance": [
         "REQ/TASK/ADR/Commit/Test/Evidence 可自动检查且双向反查",
@@ -65,7 +65,17 @@
       ],
       "evidence": [
         "docs/engineering/evidence/L-0016-phase-2-acceptance.md"
-      ]
+      ],
+      "completedAt": "2026-07-15",
+      "verification": {
+        "traceability": "PASS: 16 unique REQ; 16 unique TASK; 7 phase-2 Done records; design/evidence/implementation Commit references verified",
+        "quality": "PASS: verify; repository security 153; API 167; tenant isolation 18; frontend self-test 44; bundle budget",
+        "releaseChecks": "PASS: dependency audit 0 vulnerabilities; Playwright 37/37; real outbound calls 0",
+        "scope": "Accepted with carry-over: remaining route/UI decomposition, full Store migration, real MySQL/deployment/CI drills remain tracked",
+        "evidence": [
+          "docs/engineering/evidence/L-0016-phase-2-acceptance.md"
+        ]
+      }
     },
     {
       "id": "REQ-GJ-SEC-001",

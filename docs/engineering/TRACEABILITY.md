@@ -18,7 +18,7 @@ OBJ → REQ/NFR → ADR/DESIGN → TASK → PR/COMMIT → TEST → BUILD → REL
 | REQ | ADR/设计 | TASK | 实现/PR | 测试 | 状态 |
 |---|---|---|---|---|---|
 | REQ-GJ-ENG-001 | ADR-0001 | TASK-GJ-0001 | Commit `3d7cce6` | `npm run verify`; `npm run test:e2e` 36/36 | Done |
-| REQ-GJ-ENG-AUDIT-001 | ADR-0015；L-0016 证据 | TASK-GJ-0009 | 实现中；分支 `codex/phase-1-route-modularization` | `npm run test:traceability`；`verify`；audit；E2E | In progress |
+| REQ-GJ-ENG-AUDIT-001 | ADR-0015；L-0016 证据 | TASK-GJ-0009 | Commit `cddd97f`；分支 `codex/phase-1-route-modularization` | 追踪 16/16、阶段 2 Done 7；`verify`；audit 0；E2E 37/37 | Done |
 | REQ-GJ-SEC-001 | 风险 R-001；`DEVELOPMENT_ACCOUNTS.md` | TASK-GJ-0002 | 分支 `codex/phase-0-security-baseline` | 仓库安全检查；生产配置测试；`npm run verify`; E2E 36/36 | Verification |
 | REQ-GJ-SEC-002 | ADR-0004；风险 R-010 | TASK-GJ-0004 | 分支 `codex/phase-0-workbook-security` | 依赖审计 0；工作簿安全测试；`npm run verify`；E2E 37/37 | Done |
 | REQ-GJ-ARCH-001 | ADR-0005/0006/0007/0008；风险 R-004/R-005/R-006/R-011/R-012/R-013；L-0004~L-0009 证据 | TASK-GJ-0003 | Commit `4e25f1d` + `ff90350` + `3e5c5b3` + `dde131a` + `9160a90` + `59594d1`；分支 `codex/phase-1-route-modularization` | 九组独立路由/Gateway/Connector 测试；来源血缘；邮件/模型 Gateway；LeadSourceConnector；外联幂等；转化回滚；API 167；tenant isolation 18；`verify`；audit 0；E2E 37/37 | In progress |

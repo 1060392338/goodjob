@@ -631,3 +631,36 @@
 - 证据：`docs/engineering/evidence/L-0015-frontend-progressive-code-splitting.md`。
 - R-008 调整为 Mitigating；不把 384 kB HTML 或页面控制器拆分混报完成。
 - 下一循环 L-0016：阶段 2 全量验收、追踪审计、风险复核和回顾。
+
+## 2026-07-15 — Loop L-0016：阶段 2 全量验收、追踪审计与回顾
+
+### Discover / Register
+
+- 登记 `REQ-GJ-ENG-AUDIT-001 / TASK-GJ-0009`，关联 ADR-0015。
+- 将阶段 2 收口定义为范围验收，不等同于所有架构和部署工作完成。
+
+### Test-first
+
+- 首次 `npm run test:traceability` 按预期失败，暴露追踪行、完成日期、结构化验证、设计路径和实现 Commit 命名债务。
+- 修复真实追踪债务，没有删除测试、跳过门禁或放宽 Done 标准。
+
+### Implement
+
+- 新增机器可验证的追踪门禁并纳入根 `verify`。
+- 检查 REQ/TASK 唯一性、状态、设计/证据路径、阶段 2 Done 元数据、本地 Commit 和迭代一致性。
+- 补齐历史 Done 项结构化验证，完成阶段状态、计划、风险、证据和交接复核。
+
+### Verify
+
+- `npm run test:traceability`：PASS；16 REQ、16 TASK、阶段 2 Done 7。
+- `npm run verify`：PASS；repository security 153；API 167；tenant isolation 18；frontend self-test 44；Bundle Budget PASS。
+- `npm run audit:dependencies`：PASS，0 vulnerabilities。
+- `npm run test:e2e`：PASS，37/37。
+- 测试真实外呼：0。
+
+### Record / Next
+
+- 实现 Commit：`cddd97f`。
+- 证据：`docs/engineering/evidence/L-0016-phase-2-acceptance.md`。
+- 阶段 2：Accepted with carry-over；持续风险和转移项保持原状态。
+- 下一循环 L-0017：阶段 3 获客数据管道基础与统一接入契约。

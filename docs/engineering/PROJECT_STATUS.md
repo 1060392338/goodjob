@@ -2,8 +2,8 @@
 
 更新时间：2026-07-15
 当前分支：`codex/phase-1-route-modularization`
-当前阶段：阶段 2——可维护架构基础
-整体状态：进行中
+当前阶段：阶段 2——已验收（带明确转移项）
+整体状态：阶段 3 准备就绪
 
 ## 阶段门禁概览
 
@@ -11,8 +11,9 @@
 |---|---|---|---|
 | 0 接管与安全基线 | Verification | Harness、生产配置门禁、工作簿安全、audit 0、E2E 37/37 | GitHub 历史扫描、Linux/Node 22 Actions、部署凭证轮换确认 |
 | 1 业务行为基线 | Baseline established | 后端 self-test、security test、167 个 API 操作、37 条 E2E | 远端 CI 固化；持续维护角色/API 矩阵 |
-| 2 可维护架构基础 | In progress | ADR-0005~0014；后端 30 个 API 已模块化；外部 Gateway/Connector、SecretVault、线索外联 Repository/Unit of Work、AI 工作流 MySQL 持久化和前端懒加载性能门禁已建立 | 其他 Store Repository、前后端剩余超大模块、真实 MySQL/部署演练继续处理 |
-| 3~7 数据/AI/协作/发布 | Backlog | 阶段 3/4/5 已有前置 Connector、Gateway、Workflow Engine 与凭证安全边界 | 真实凭证和供应商未指定；完整来源管道、AI 功能 API/UI、协作 Adapter 与正式发布门禁未完成 |
+| 2 可维护架构基础 | Accepted with carry-over | ADR-0005~0015；机器追踪门禁；后端 30 个 API 模块化；Gateway/Connector、SecretVault、线索外联 Repository/Unit of Work、AI 工作流持久化、前端懒加载与 Bundle Budget | 其他 Store Repository、剩余超大模块、真实 MySQL/部署/CI 演练已显式转入阶段 3/4/7，不作为本阶段完成项 |
+| 3 获客数据管道 | Ready | 已有 LeadSourceConnector、来源配置、SecretVault、线索血缘和幂等键前置边界 | 统一规范化/去重/检查点管道、CSV/Excel/网页/第三方 API Connector 尚待实现；真实供应商验收需凭证 |
+| 4~7 AI/协作/发布 | Backlog | ModelGateway、LangGraph Workflow Engine、持久化与统一 Adapter 设计已具备前置基础 | AI 功能 API/UI、三平台 Adapter 与正式发布门禁未完成 |
 
 详细阶段、验收和测试标准见 `DEVELOPMENT_PLAN.md`。
 
@@ -38,24 +39,24 @@
 
 ## 当前循环
 
-**Loop L-0015：前端渐进式动态分包与 Bundle Budget——本地 DoD 完成**
+**Loop L-0016：阶段 2 全量验收与收口——本地 DoD 完成**
 
-- 关联：`REQ-GJ-FE-PERF-001 / TASK-GJ-0008`；实现 Commit：`1509f64`；设计：ADR-0014；
-- 入口：1,394.14 kB 单包改为 1.90 kB 入口动态加载 389.65 kB 核心原型；
-- 懒加载：workbook/XLSX 与 dashboard-chart/ECharts/ZRender 均独立且不进入首屏静态图；
-- 门禁：manifest、入口/核心预算、动态入口、稳定 vendor、modulepreload 和初始依赖图自动检查；
-- 回归：frontend self-test 44、来源契约 8/4、workbook security、`verify`、API 167、tenant 18、audit 0、Playwright 37/37；
-- 限制：384 kB HTML 和页面控制器仍未逐页拆分，R-004/R-008 保持 Mitigating；
-- 证据：`evidence/L-0015-frontend-progressive-code-splitting.md`。
+- 关联：`REQ-GJ-ENG-AUDIT-001 / TASK-GJ-0009`；实现 Commit：`cddd97f`；设计：ADR-0015；
+- 追踪门禁：16 个 REQ、16 个 TASK 唯一，阶段 2 的 7 个 Done 项均具备完成日期、结构化验证、设计、证据和本地有效实现 Commit；
+- 全量验收：`npm run verify` PASS；API 167；tenant isolation 18；repository security 153；frontend self-test 44；Bundle Budget PASS；
+- 发布前检查：dependency audit 0 vulnerabilities；Playwright 37/37；测试真实外呼 0；
+- 验收结论：阶段 2 **Accepted with carry-over**，不将剩余路由/UI 拆分、全 Store 迁移、真实 MySQL/部署/CI 演练混报为完成；
+- 证据：`evidence/L-0016-phase-2-acceptance.md`。
 
 ## 下一循环
 
-**L-0016：阶段 2 全量验收与收口**
+**L-0017：阶段 3 获客数据管道基础与统一接入契约**
 
-1. 对 REQ/TASK/ADR/Commit/Test/Evidence 执行双向追踪审计；
-2. 复核代码、项目状态、开发计划、风险和交接文档一致性；
-3. 执行完整 verify、dependency audit 和 Playwright 37/37；
-4. 明确阶段 2 已完成与转入后续阶段的工作，生成验收与回顾证据。
+1. 登记阶段 3 的规范化、血缘、去重、检查点和幂等需求；
+2. 先建立 Connector Contract 与失败测试，再实现 CSV/Excel、网页/搜索、第三方 API 的统一执行边界；
+3. 真实供应商和凭证未确定前只运行 Mock/契约测试，不产生真实外呼；
+4. 每个 Connector 切片独立 Commit、证据、验收和回滚说明。
+
 ## 阻塞与持续风险
 
 - GitHub 仓库当前为 Public；是否调整为 Private 需由项目负责人确认。
@@ -68,8 +69,9 @@
 - 第三方线索数据厂商未指定；完整供应商验收无法开始。
 - 钉钉、企微、飞书当前只保留统一 Adapter 入口与 Mock 计划。
 
-## 阶段 2 当前增量：L-0014 / L-0015
+## 阶段 2 收口结论
 
-- L-0014 已完成 AI 工作流 MySQL checkpoint、run、审批、Effect 与审计持久化，Commit `9ab50b1`；R-014 保持 Mitigating，等待真实 MySQL 演练。
-- L-0015 已完成入口、核心原型、工作簿和图表重依赖分包及 Bundle Budget，Commit `1509f64`；R-008 保持 Mitigating。
-- 当前切片 L-0016：阶段 2 追踪审计、风险复核、全量验收和回顾。
+- L-0014：AI 工作流 MySQL checkpoint、run、审批、Effect 与审计持久化，Commit `9ab50b1`；R-014 保持 Mitigating。
+- L-0015：入口、核心原型、工作簿和图表重依赖分包及 Bundle Budget，Commit `1509f64`；R-008 保持 Mitigating。
+- L-0016：机器可验证追踪门禁和阶段验收，Commit `cddd97f`；阶段 2 Accepted with carry-over。
+- 转移项继续保留原风险状态和发布门禁，不因阶段收口自动关闭。
