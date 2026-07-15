@@ -7,6 +7,7 @@ import type { WhatsAppBinding, WhatsAppMessage } from "./types.js";
 import type { AiModelConfig, CaseStudy, CommissionCalculation, CommissionExport, CommissionItem, CommissionProduct, CommissionRule, Competitor, Customer, CustomerActivity, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, ExamQuestionLink, ImportExportJob, KnowledgeAsset, Lead, LeadActivity, LeadOutreachRequest, LeadSourceConfig, LeadSourceEvent, Memo, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, ProblemItem, Reminder, SalesRecordAudit, Todo, TradeDocument, User, WecomMessage, WebsiteOpportunity } from "./types.js";
 import { credentialSecretContext, decodeCredentialSecret, protectCredentialRecords } from "./security/credential-secret-storage.js";
 import { SecretVaultError, secretVaultFromEnvironment, type SecretVault } from "./security/secret-vault.js";
+import { ensureMysqlAiWorkflowSchema } from "./ai/mysql-ai-workflow-persistence.js";
 
 const defaultUrl = "mysql://goodjob:change_me@127.0.0.1:3306/goodjob_crm";
 
@@ -23,6 +24,7 @@ export async function createMysqlStore(options: MysqlStoreOptions = {}): Promise
   const databaseUrl = configuredUrl || defaultUrl;
   const pool = mysql.createPool({ uri: databaseUrl, connectionLimit: 4, namedPlaceholders: true });
   await ensureSchema(pool);
+  await ensureMysqlAiWorkflowSchema(pool);
   await migrateCredentialSecrets(pool, secretVault);
 
   const store: CrmStore = {

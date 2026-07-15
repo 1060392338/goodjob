@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0013",
+  "currentIteration": "L-0014",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -255,6 +255,53 @@
         }
       },
       "completedAt": "2026-07-15"
+    },
+    {
+      "id": "REQ-GJ-AI-PERSIST-001",
+      "task": "TASK-GJ-0103",
+      "title": "Persist LangGraph workflow state, approvals, effects, and audit in MySQL",
+      "phase": 2,
+      "status": "in_progress",
+      "priority": "P0",
+      "acceptance": [
+        "A second engine instance can recover an awaiting workflow from MySQL",
+        "Resume validates actor and tenant and rechecks authorization before effects",
+        "Concurrent approvals and replay execute the business effect once",
+        "Checkpoint, run, approval, effect, and audit persistence reject secrets",
+        "MySQL writes are row-level, parameterized, recoverable, and never full-table replacement",
+        "Public API, security, E2E, and dependency gates do not regress"
+      ],
+      "tests": [
+        "npm run test:workflow:persistence --workspace backend",
+        "npm run test:workflow:ai --workspace backend",
+        "npm run verify",
+        "npm run test:e2e",
+        "npm run audit:dependencies"
+      ],
+      "evidence": [
+        "docs/engineering/evidence/L-0014-ai-workflow-mysql-persistence.md"
+      ],
+      "design": [
+        "docs/engineering/adr/ADR-0013-ai-workflow-mysql-persistence.md"
+      ],
+      "dependencies": [
+        "REQ-GJ-AI-ORCH-001",
+        "REQ-GJ-ARCH-002",
+        "REQ-GJ-SEC-003"
+      ],
+      "nonGoals": [
+        "No real model or production credential",
+        "No public AI route or frontend UI",
+        "No production database migration execution"
+      ],
+      "progress": {
+        "currentSlice": {
+          "loop": "L-0014",
+          "scope": "MySQL checkpoints, run/approval/effect/audit state, recovery, and concurrency idempotency",
+          "status": "in_progress",
+          "baselineCommit": "24e77bb"
+        }
+      }
     },
     {
       "id": "REQ-GJ-AI-001",

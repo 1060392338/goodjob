@@ -88,6 +88,20 @@ export interface AiWorkflowEffectStore {
   executeOnce<T>(idempotencyKey: string, operation: () => Promise<T>): Promise<AiWorkflowEffectResult<T>>;
 }
 
+export interface AiWorkflowPersistence {
+  createRun(snapshot: AiWorkflowSnapshot): Promise<{ created: boolean; snapshot?: AiWorkflowSnapshot }>;
+  saveSnapshot(snapshot: AiWorkflowSnapshot): Promise<void>;
+  getRun(runId: string): Promise<AiWorkflowSnapshot | null>;
+  claimDecision(input: {
+    runId: string;
+    attempt: number;
+    decision: AiWorkflowDecision;
+    actorId: string;
+    tenantId: string;
+  }): Promise<{ claimed: boolean; decision: AiWorkflowDecision }>;
+  appendAudit(event: AiWorkflowAuditEvent): Promise<void>;
+}
+
 export interface AiWorkflowEngineOptions {
   modelGateway: ModelGateway;
   resolveModelConfig(input: { configId: string; actorId: string; tenantId: string }): Promise<AiModelConfig | null>;
@@ -109,6 +123,7 @@ export interface AiWorkflowEngineOptions {
   audit(event: AiWorkflowAuditEvent): Promise<void>;
   checkpointer?: BaseCheckpointSaver;
   effectStore?: AiWorkflowEffectStore;
+  persistence?: AiWorkflowPersistence;
   createRunId?: () => string;
   createTraceId?: () => string;
   now?: () => Date;
@@ -124,6 +139,7 @@ export type AiWorkflowErrorCode =
   | "not_found"
   | "forbidden"
   | "resume_forbidden"
+  | "decision_conflict"
   | "model_config_unavailable"
   | "invalid_model_output";
 
@@ -239,7 +255,7 @@ export function createAiWorkflowEngine(options: AiWorkflowEngineOptions): AiWork
     details?: AiWorkflowAuditEvent["details"],
     traceId = createTraceId()
   ) {
-    await options.audit({
+    const event: AiWorkflowAuditEvent = {
       type,
       runId: state.runId,
       traceId,
@@ -249,7 +265,9 @@ export function createAiWorkflowEngine(options: AiWorkflowEngineOptions): AiWork
       leadId: state.leadId,
       occurredAt: now().toISOString(),
       details
-    });
+    };
+    await options.persistence?.appendAudit(event);
+    await options.audit(event);
   }
 
   async function fail(state: WorkflowStateValue, step: string, code: AiWorkflowErrorCode, message: string): Promise<never> {
@@ -408,7 +426,7 @@ export function createAiWorkflowEngine(options: AiWorkflowEngineOptions): AiWork
 
   const configFor = (runId: string) => ({ configurable: { thread_id: runId } });
 
-  async function getSnapshot(runId: string): Promise<AiWorkflowSnapshot | null> {
+  async function getGraphSnapshot(runId: string): Promise<AiWorkflowSnapshot | null> {
     try {
       const snapshot = await graph.getState(configFor(runId));
       const state = snapshot.values as Partial<WorkflowStateValue>;
@@ -417,6 +435,16 @@ export function createAiWorkflowEngine(options: AiWorkflowEngineOptions): AiWork
     } catch {
       return null;
     }
+  }
+
+  async function getSnapshot(runId: string): Promise<AiWorkflowSnapshot | null> {
+    return await getGraphSnapshot(runId) ?? await options.persistence?.getRun(runId) ?? null;
+  }
+
+  async function persistSnapshot(state: WorkflowStateValue) {
+    const snapshot = safeSnapshot(state);
+    await options.persistence?.saveSnapshot(snapshot);
+    return snapshot;
   }
 
   return {
@@ -436,9 +464,24 @@ export function createAiWorkflowEngine(options: AiWorkflowEngineOptions): AiWork
         outcome: null,
         effectReferenceId: null
       };
+      if (options.persistence) {
+        const created = await options.persistence.createRun(safeSnapshot(initialState));
+        if (!created.created) {
+          const existing = await getGraphSnapshot(runId) ?? created.snapshot ?? await options.persistence.getRun(runId);
+          if (!existing) throw new AiWorkflowError("not_found", "Workflow run could not be recovered");
+          if (existing.actorId !== input.actor.id || existing.tenantId !== input.actor.tenantId) {
+            throw new AiWorkflowError("resume_forbidden", "Workflow run belongs to another actor or tenant");
+          }
+          if (existing.leadId !== input.leadId || existing.modelConfigId !== input.modelConfigId) {
+            throw new AiWorkflowError("resume_forbidden", "Workflow run identity does not match the original request");
+          }
+          if (existing.status !== "running" || await getGraphSnapshot(runId)) return existing;
+          initialState.workflowTraceId = existing.workflowTraceId;
+        }
+      }
       await audit(initialState, "workflow.started", "start", { modelConfigId: input.modelConfigId });
       const result = await graph.invoke(initialState, configFor(runId));
-      return safeSnapshot(result as WorkflowStateValue);
+      return persistSnapshot(result as WorkflowStateValue);
     },
 
     async resume(input) {
@@ -447,12 +490,24 @@ export function createAiWorkflowEngine(options: AiWorkflowEngineOptions): AiWork
       if (current.actorId !== input.actor.id || current.tenantId !== input.actor.tenantId) {
         throw new AiWorkflowError("resume_forbidden", "Workflow run belongs to another actor or tenant");
       }
-      if (current.status === "completed" || current.status === "rejected") return current;
-      if (current.status !== "awaiting_confirmation") {
+      if (current.status !== "awaiting_confirmation" && current.status !== "completed" && current.status !== "rejected") {
         throw new AiWorkflowError("resume_forbidden", "Workflow run is not waiting for confirmation");
       }
+      if (options.persistence) {
+        const claim = await options.persistence.claimDecision({
+          runId: input.runId,
+          attempt: current.attempt,
+          decision: input.decision,
+          actorId: input.actor.id,
+          tenantId: input.actor.tenantId
+        });
+        if (claim.decision !== input.decision) {
+          throw new AiWorkflowError("decision_conflict", "A different workflow decision was already recorded");
+        }
+      }
+      if (current.status === "completed" || current.status === "rejected") return current;
       const result = await graph.invoke(new Command({ resume: input.decision }), configFor(input.runId));
-      return safeSnapshot(result as WorkflowStateValue);
+      return persistSnapshot(result as WorkflowStateValue);
     },
 
     getSnapshot
