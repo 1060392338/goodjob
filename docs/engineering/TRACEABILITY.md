@@ -29,7 +29,7 @@ OBJ → REQ/NFR → ADR/DESIGN → TASK → PR/COMMIT → TEST → BUILD → REL
 | REQ-GJ-SEC-003 | ADR-0011；风险 R-012/R-013；L-0012 证据 | TASK-GJ-0006 | Commit `a3e2dcc`；分支 `codex/phase-1-route-modularization` | Vault 加密/上下文/篡改/迁移/轮换/吊销/掩码；API 167；tenant 18；`verify`；audit 0；E2E 37/37 | Done |
 | REQ-GJ-AI-PERSIST-001 | ADR-0013；风险 R-014；L-0014 证据 | TASK-GJ-0103 | Commit `9ab50b1`；分支 `codex/phase-1-route-modularization` | 6 表；跨实例恢复；并发 Effect 唯一；决策冲突失败关闭；权限复检；Secret 拒绝；API 167；tenant 18；`verify`；audit 0；E2E 37/37 | Done |
 | REQ-GJ-AI-001 | ADR-0002/0007；L-0008 仅建立前置传输边界 | TASK-GJ-0101 | 前置边界 Commit `9160a90` | 已覆盖三协议传输、脱敏、SSRF、超时和错误分类；Prompt/Schema 版本、用量、重试、审计仍未完成 | Backlog |
-| REQ-GJ-LEAD-001 | ADR-0003/0008/0016/0017/0018；L-0009 前置边界；L-0017/L-0018/L-0019 证据 | TASK-GJ-0201 | Commit `59594d1` + `308cb67` + `db6c711`；L-0019 Test-first `603c664` + `3058c32`；分支 `codex/phase-3-lead-pipeline` | L-0017 管道；L-0018 CSV/XLSX/XLS；L-0019 当前为预期 Red（实现文件缺失），已锁定 SSRF/robots/限流/内容隔离/checkpoint/幂等契约；完整 `verify`/audit/E2E 待实现后执行 | In progress |
+| REQ-GJ-LEAD-001 | ADR-0003/0008/0016/0017/0018；L-0009 前置边界；L-0017/L-0018/L-0019 证据 | TASK-GJ-0201 | Commit `59594d1` + `308cb67` + `db6c711` + `3b0c366`；L-0019 Test-first `603c664` + `3058c32`；分支 `codex/phase-3-lead-pipeline` | L-0017 管道；L-0018 CSV/XLSX/XLS；L-0019 Web：许可/robots/SSRF/限流/内容隔离/checkpoint/幂等专项 PASS；`verify` repository security 169、API 167、tenant 18；audit 0；E2E 37/37；真实外呼 0。L-0020/L-0021 待完成 | In progress |
 | REQ-GJ-AI-LEAD-001 | ADR-0002 | TASK-GJ-0301 | 待开始 | 金标评测；注入防护 | Backlog |
 | REQ-GJ-AI-ASSIST-001 | ADR-0002 | TASK-GJ-0401 | 待开始 | 权限矩阵；确认执行 | Backlog |
 | REQ-GJ-COLLAB-001 | ADR-0003 | TASK-GJ-0501 | 待开始 | Adapter 契约；Webhook 安全 | Backlog |

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0019",
+  "currentIteration": "L-0020",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -498,7 +498,7 @@
         "docs/engineering/adr/ADR-0017-csv-excel-lead-connector.md",
         "docs/engineering/adr/ADR-0018-public-web-search-connector.md"
       ],
-      "note": "L-0017 完成统一管道，L-0018 完成 CSV/Excel Connector。L-0019 已完成 ADR 与 Test-first/Red 检查点（603c664、3058c32），生产实现尚不存在；下一步按 ADR-0018 和专项测试实现安全网页/搜索 Connector。L-0020/L-0021 尚未开始。",
+      "note": "L-0017 统一管道、L-0018 CSV/Excel、L-0019 公开网页/搜索安全 Connector 已完成。当前进入 L-0020 第三方 API Connector 插件边界；L-0021 阶段验收尚未开始。真实供应商、真实凭证和真实网络继续 Deferred。",
       "increments": [
         {
           "loop": "L-0017",
@@ -514,12 +514,13 @@
         },
         {
           "loop": "L-0019",
-          "status": "in_progress",
+          "status": "done",
           "testCommits": [
             "603c664",
             "3058c32"
           ],
-          "verification": "RED as designed: npm run test:connector:web-leads --workspace backend fails with ERR_MODULE_NOT_FOUND because web-lead-ingestion-connector.ts is not implemented; security contracts 12; real outbound calls 0"
+          "deliveryCommit": "3b0c366",
+          "verification": "PASS: web connector 2 documents; permission/robots/content lineage; SSRF/DNS/redirect/rate/content isolation; checkpoint resume; duplicate writes 0; security rejections 12; real outbound calls 0; verify repository security 169, traceability 16/16, API 167, tenant 18; audit 0; E2E 37/37"
         }
       ]
     },

@@ -3,7 +3,7 @@
 更新时间：2026-07-15
 当前分支：`codex/phase-3-lead-pipeline`
 当前阶段：阶段 3——获客数据管道
-整体状态：L-0019 已进入 Test-first/Red，实现尚未开始
+整体状态：L-0019 已完成，L-0020 待启动
 
 ## 阶段门禁概览
 
@@ -12,7 +12,7 @@
 | 0 接管与安全基线 | Verification | Harness、生产配置门禁、工作簿安全、audit 0、E2E 37/37 | GitHub 历史扫描、Linux/Node 22 Actions、部署凭证轮换确认 |
 | 1 业务行为基线 | Baseline established | 后端 self-test、security test、167 个 API 操作、37 条 E2E | 远端 CI 固化；持续维护角色/API 矩阵 |
 | 2 可维护架构基础 | Accepted with carry-over | ADR-0005~0015；机器追踪门禁；后端 30 个 API 模块化；Gateway/Connector、SecretVault、线索外联 Repository/Unit of Work、AI 工作流持久化、前端懒加载与 Bundle Budget | 其他 Store Repository、剩余超大模块、真实 MySQL/部署/CI 演练已显式转入阶段 3/4/7，不作为本阶段完成项 |
-| 3 获客数据管道 | In progress | L-0017 统一管道基础与 L-0018 CSV/Excel Connector 已完成；L-0019 ADR 与 Test-first/Red 契约已建立 | L-0019 实现/全量验收、L-0020 第三方 API Connector、L-0021 阶段验收尚待完成；真实供应商验收需凭证 |
+| 3 获客数据管道 | In progress | L-0017 统一管道、L-0018 CSV/Excel、L-0019 公开网页/搜索安全 Connector 已完成并通过完整门禁 | L-0020 第三方 API Connector 与 L-0021 阶段验收尚待完成；真实供应商验收需凭证 |
 | 4~7 AI/协作/发布 | Backlog | ModelGateway、LangGraph Workflow Engine、持久化与统一 Adapter 设计已具备前置基础 | AI 功能 API/UI、三平台 Adapter 与正式发布门禁未完成 |
 
 详细阶段、验收和测试标准见 `DEVELOPMENT_PLAN.md`。
@@ -39,22 +39,22 @@
 
 ## 最近完成循环
 
-**Loop L-0018：CSV/Excel Connector 接入统一管道——已完成**
+**Loop L-0019：公开网页/搜索 Connector 安全执行边界——已完成**
 
-- 关联：`REQ-GJ-LEAD-001 / TASK-GJ-0201`；实现 Commit `db6c711`；
-- CSV/XLSX/XLS、共享工作簿安全解析、版本化映射、文件/批次/行血缘、reject_batch/skip_invalid、幂等和 checkpoint 恢复已通过；
-- 专项 PASS；`verify` PASS；repository security 165；API 167；tenant 18；audit 0；最终完整 E2E 37/37；真实外呼 0；
-- Evidence：`docs/engineering/evidence/L-0018-csv-excel-lead-connector.md`。
+- 关联：`REQ-GJ-LEAD-001 / TASK-GJ-0201`；实现 Commit `3b0c366`；
+- 域名许可、DNS/IP/重定向 SSRF、robots、限流、内容限制/隔离、Prompt 注入信号净化、checkpoint、恢复、幂等和血缘已通过；
+- 专项 PASS：2 个文档、恢复成功、duplicate writes 0、安全拒绝 12、真实外呼 0；
+- `verify` PASS：repository security 169、API 167、tenant 18；audit 0；E2E 37/37；
+- Evidence：`docs/engineering/evidence/L-0019-public-web-search-connector.md`。
 
 ## 当前循环
 
-**L-0019：公开网页/搜索 Connector 安全执行边界——Test-first/Red**
+**L-0020：第三方 API Connector 编排与供应商插件边界——待启动**
 
-- ADR-0018、Evidence 和专项测试已建立；检查点 Commit：`603c664`、`3058c32`；
-- 2026-07-15 专项测试以 `ERR_MODULE_NOT_FOUND` 按预期失败，生产实现 `web-lead-ingestion-connector.ts` 尚不存在；
-- 测试已覆盖域名许可、DNS/IP/重定向 SSRF 防护、robots/许可记录、限流、内容类型/大小/超时、恶意内容隔离、checkpoint、幂等和血缘；
-- 下一动作是按 ADR-0018 和测试实现 Connector，不得删测或放宽失败关闭边界；
-- 仅使用 Mock Transport/fixtures，真实网络、真实凭证和真实供应商调用保持 0。
+- 必须先建立 ADR、Evidence 和 Test-first/Red 契约；
+- 统一 Provider 插件边界，不把供应商字段、认证或分页细节泄漏到领域管道；
+- 在 Mock Provider 下覆盖分页、游标、退避、Retry-After、额度、错误分类、checkpoint、恢复、幂等和血缘；
+- 不选择真实供应商，不接真实凭证，不进行真实外呼。
 
 ## 阻塞与持续风险
 

@@ -756,3 +756,28 @@
 - 更新 PROJECT_STATUS、FEATURES、TRACEABILITY、HANDOFF 和 L-0019 Evidence，使下一会话不依赖聊天上下文即可恢复。
 - 下一动作唯一化：实现 `web-lead-ingestion-connector.ts`，按专项失败逐项转绿，再执行 build、verify、audit、E2E 和文档收口。
 - 当前不宣称 L-0019 实现完成，不宣称全量质量门禁通过。
+
+
+## 2026-07-15 — Loop L-0019：公开网页/搜索安全 Connector（完成）
+
+### Implement
+
+- 实现 `WebLeadIngestionConnector`、显式 Resolver/Transport/Extractor/RateLimiter 契约和内存限流器。
+- 每次请求/重定向执行 allowlist、DNS/IP、地址钉扎、限流、响应限制；robots 失败关闭。
+- 净化危险 HTML 与 Prompt 注入样式内容，外部正文只作为不可信数据交给 Extractor，原文不持久化。
+- checkpoint 绑定 connector/tenant/种子/策略摘要并保存队列、robots 摘要和解析钉扎。
+
+### Verify / Review
+
+- 专项 PASS：2 documents、robots/许可血缘、内容隔离、故障恢复、duplicate writes 0、安全拒绝 12、真实外呼 0。
+- `npm run verify` PASS：repository security 169、traceability 16/16、API 167、tenant 18、frontend self-test 44、workbook security/Bundle Budget PASS。
+- `npm run audit:dependencies` PASS，0 vulnerabilities。
+- `npm run test:e2e` PASS，37/37。
+- `git diff --check` PASS。
+
+### Record / Next
+
+- Test-first Commits：`603c664`、`3058c32`；实现 Commit：`3b0c366`。
+- Evidence：`docs/engineering/evidence/L-0019-public-web-search-connector.md`。
+- R-006 保持 Open，R-015 保持 Mitigating；真实网络、供应商、凭证和客户数据继续 Deferred。
+- 下一循环 L-0020：第三方 API Connector 插件边界。
