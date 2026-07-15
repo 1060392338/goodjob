@@ -162,7 +162,7 @@ const context: LeadIngestionContext = {
   jobId: "job-web-resume",
   ownerId: "owner-1",
   teamId: "team-1",
-  sourceType: "website",
+  sourceType: "inbound",
   sourceChannel: "public_web",
   sourceCampaign: "phase-3"
 };
