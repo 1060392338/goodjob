@@ -272,6 +272,33 @@ await expectConnectorError("checkpoint_context_mismatch", () => checkpointConnec
   checkpoint: { ...checkpointPage.nextCheckpoint, seedDigest: "tampered" }
 }));
 
+
+const timeoutTransport = new MockWebTransport();
+timeoutTransport.routes.set("https://search.example.com/robots.txt", response(200, "text/plain", "User-agent: *\nAllow: /\n"));
+timeoutTransport.routes.set("https://search.example.com/results?q=valves", new Error("transport timeout"));
+await expectConnectorError("timeout", () => createConnector(timeoutTransport).fetchPage({}));
+
+const robotsMissingTransport = new MockWebTransport();
+robotsMissingTransport.routes.set("https://search.example.com/robots.txt", response(404, "text/plain", "not found"));
+await expectConnectorError("robots_unavailable", () => createConnector(robotsMissingTransport).fetchPage({}));
+
+const loopTransport = new MockWebTransport();
+loopTransport.routes.set("https://search.example.com/robots.txt", response(200, "text/plain", "User-agent: *\nAllow: /\n"));
+loopTransport.routes.set("https://search.example.com/results?q=valves", response(302, "text/plain", "", { location: "/redirect-1" }));
+loopTransport.routes.set("https://search.example.com/redirect-1", response(302, "text/plain", "", { location: "/redirect-2" }));
+await expectConnectorError("too_many_redirects", () => createConnector(loopTransport, { maxRedirects: 1 }).fetchPage({}));
+
+assert.throws(() => new WebLeadIngestionConnector({
+  id: "missing-permission",
+  tenantId: "team-1",
+  seeds: [{ url: "https://search.example.com/results", kind: "search" }],
+  policies: [{ hostname: "search.example.com", maxRequestsPerWindow: 10, windowMs: 60_000 } as never],
+  resolver: async () => ["93.184.216.34"],
+  transport: new MockWebTransport(),
+  extractor,
+  rateLimiter: new InMemoryWebLeadRateLimiter()
+}), /许可|permission/i);
+
 assert.equal(directTransport.calls.some((call) => call.url.startsWith("http://127.")), false);
 console.log(JSON.stringify({
   ok: true,
@@ -283,6 +310,6 @@ console.log(JSON.stringify({
   contentIsolation: true,
   resumedAfterFailure: resumed.status === "completed",
   duplicateWrites: rerun.created,
-  securityRejections: 8,
+  securityRejections: 12,
   realOutboundCalls: 0
 }, null, 2));
