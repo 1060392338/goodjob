@@ -4,80 +4,82 @@
 
 ## 可恢复结论
 
-当前文档和工作区足以从同一位置继续开发。稳定基线是 GitHub 分支 codex/phase-3-lead-pipeline 的 Commit 29299ed；L-0017 已完整验收并推送。L-0018 仅到 Test-first/共享模块骨架阶段，明确未完成、未提交、未推送，不得混报。
+当前代码、Git 提交和工程文档已足以支持下一次会话继续开发。L-0018 已完成实现和本地验收，稳定实现 Commit 为 `db6c711`；文档收口完成后，下一开发位置是 L-0019。GitHub 是唯一交付远端，禁止操作 Gitee。
 
 ## 当前工作位置
 
-- 仓库：C:\Users\Administrator\Documents\Codex\2026-07-13\hi\GoodJob
-- 分支：codex/phase-3-lead-pipeline
-- GitHub：1060392338/goodjob
-- L-0017 稳定基线：29299ed
-- 当前分支 HEAD：L-0018 Test-first/Red 检查点（以 git log 最新提交为准）
-- 当前 Loop：L-0018（CSV/Excel Connector）
-- 当前 REQ/TASK：REQ-GJ-LEAD-001 / TASK-GJ-0201，状态保持 in_progress
-- 禁止推送或操作 Gitee origin。
+- 仓库：`C:\Users\Administrator\Documents\Codex\2026-07-13\hi\GoodJob`
+- 分支：`codex/phase-3-lead-pipeline`
+- GitHub：`1060392338/goodjob`
+- L-0017：实现 `308cb67`，文档收口 `29299ed`
+- L-0018 Test-first/Red 检查点：`876ba19`
+- L-0018 实现：`db6c711`
+- 下一 Loop：`L-0019`（公开网页/搜索安全 Connector）
+- 当前 REQ/TASK：`REQ-GJ-LEAD-001 / TASK-GJ-0201`，总体仍为 `in_progress`，因为 L-0019、L-0020、L-0021 尚未完成。
 
-## 已稳定完成：L-0017
+## 已完成：L-0018 CSV/Excel Connector
 
-- 实现 Commit：308cb67；文档收口 Commit：29299ed；
-- 专项：normalized fields 7、persisted 2、故障恢复 true、duplicate writes 0、Secret rejection true、真实外呼 0；
-- verify PASS；repository security 158；API 167；tenant isolation 18；frontend self-test 44；Bundle Budget PASS；
-- dependency audit 0 vulnerabilities；Playwright 37/37；
-- Evidence：docs/engineering/evidence/L-0017-lead-ingestion-pipeline.md。
+### 交付范围
 
-## L-0018 当前中断点
-
-### Test-first 检查点包含
-
-- backend/src/connectors/file-lead-ingestion-connector-test.ts
-- backend/package.json：新增 test:connector:file-leads，并接入 backend test
-- packages/workbook-security/package.json
-- packages/workbook-security/src/index.js
-- packages/workbook-security/src/index.d.ts
-- docs/engineering/adr/ADR-0017-csv-excel-lead-connector.md
-- docs/engineering/evidence/L-0018-csv-excel-lead-connector.md
-- docs/engineering/FEATURES.json：关联 ADR-0017 与 L-0018 Evidence
+- 前后端复用 `@goodjob/workbook-security`，不复制工作簿安全解析实现；
+- 支持 CSV、XLSX、XLS；
+- 显式字段映射和 mapping version；
+- 文件 SHA-256、batchId、fileName、sheetName、rowNumber、mappingVersion、sourceExternalId 血缘；
+- `reject_batch` 与显式 `skip_invalid`；
+- 固定分页 cursor、上下文绑定 checkpoint、失败后恢复；
+- 稳定身份和重复导入幂等；
+- Secret-like 表头、Prototype Pollution 表头、危险公式、签名伪造及资源超限拒绝；
+- 原始整行不进入持久化 payload；真实外呼 0。
 
 ### Test-first 证据
 
-执行 npm run test:connector:file-leads --workspace backend 按预期失败：
+1. 首次专项失败：`ERR_MODULE_NOT_FOUND: @goodjob/workbook-security`；
+2. workspace 接线后再次失败：缺少 `file-lead-ingestion-connector.js`；
+3. 保留并实现原测试契约，没有删除测试、跳过断言或放宽安全门禁。
 
-- ERR_MODULE_NOT_FOUND
-- 缺少 package：@goodjob/workbook-security
+### 最终本地验收
 
-这是真实的 Red 阶段证据。禁止删除测试、跳过测试或放宽断言。共享 package 已创建骨架，但尚未加入 root workspaces、前后端依赖和 package-lock，因此仍不可解析。
+- `npm run test:connector:file-leads --workspace backend`：PASS；3 种格式、2 条映射记录、5 个血缘字段、故障恢复 true、duplicate writes 0、reject_batch writes 0、部分失败报告 true、安全拒绝 5、真实外呼 0；
+- `npm run verify`：PASS；repository security 165、traceability 16/16、API 167、tenant isolation 18、frontend self-test 44、workbook security PASS、Bundle Budget PASS；
+- `npm run audit:dependencies`：PASS，0 vulnerabilities；
+- `npm run test:e2e`：首次完整运行 36/37，首条登录等待超时；单条复跑通过；随后再次完整运行 PASS，37/37。最终门禁以完整复跑 37/37 为准，并保留首次波动记录供后续观察；
+- `git diff --check`：PASS；
+- 测试真实外呼：0。
 
-### 尚未完成
+## 下一 Loop：L-0019
 
-1. 将 packages/workbook-security 加入根 workspaces；
-2. frontend/backend 声明 @goodjob/workbook-security workspace 依赖，xlsx 仅由共享 package 持有；
-3. 更新 package-lock，并调整 dependency-policy 门禁验证共享依赖、xlsx 0.20.3 官方来源和完整性；
-4. 将 frontend/src/workbook.ts 的安全读取逻辑改为复用共享 package，保持现有浏览器 API 与 Bundle Budget；
-5. 实现 backend/src/connectors/file-lead-ingestion-connector.ts；
-6. 让专项测试覆盖 CSV/XLSX/XLS、版本化映射、文件/批次/工作表/行血缘、多页 cursor、故障恢复、同文件重跑、reject_batch、skip_invalid、危险表头、Secret 表头、公式、限制和签名伪造；
-7. 专项通过后运行 workbook security、dependency policy、backend build、verify、audit、E2E；
-8. 更新 Evidence、FEATURES、TRACEABILITY、PROJECT_STATUS、IMPLEMENTATION_LOG、RISK_REGISTER、DEVELOPMENT_PLAN；
-9. L-0018 完整验收后再独立 Commit 和只推 GitHub，然后进入 L-0019。
+目标：公开网页/搜索 Connector 的安全执行边界。
 
-## 继续开发的推荐顺序
+必须实现并验收：
 
-1. 先检查 git status 和本交接文档，不清理当前未提交文件；
-2. 完成 workspace/package-lock 接线；
-3. 运行专项测试，逐项修复真实实现；
-4. 检查前端工作簿安全测试没有回归；
-5. 通过全量门禁后收口 L-0018；
-6. 继续 L-0019、L-0020、L-0021。
+1. 域名 allowlist，默认拒绝未知域名；
+2. DNS 解析、IP 分类和每次重定向复检，阻断 localhost、私网、链路本地、保留地址及 DNS rebinding；
+3. robots/许可判断及证据记录；
+4. 每租户、来源和域名限流；
+5. 响应内容类型、大小、超时和重定向次数限制；
+6. HTML/文本净化，外部内容按不可信数据隔离，不允许成为系统指令；
+7. 分页、checkpoint、失败恢复、幂等和逐记录血缘；
+8. 全部通过 Mock Transport/fixtures 验证，真实网络、真实凭证和真实供应商调用保持 0。
 
-## 剩余阶段
+建议先创建 `ADR-0018` 和 L-0019 Evidence，先写失败契约测试，再实现 Connector。不得把前端真实抓取页面、供应商选择或 AI Prompt 编排混入本 Loop。
 
-- L-0018：进行中，尚未完成；
-- L-0019：公开网页/搜索安全 Connector；
-- L-0020：第三方 API Mock Provider/插件边界；
-- L-0021：阶段 3 全量验收与回顾。
+## 下一次会话启动顺序
 
-## 持续风险与暂停条件
+1. 阅读 `AGENTS.md` 与 `docs/engineering/README.md`；
+2. 执行 `git status --short --branch` 和 `git log --oneline -8`；
+3. 确认分支为 `codex/phase-3-lead-pipeline`，工作区应为干净状态；
+4. 阅读 `PROJECT_STATUS.md`、`FEATURES.json`、`TRACEABILITY.md`、`RISK_REGISTER.md`；
+5. 阅读 ADR-0016、ADR-0017 及 L-0017/L-0018 Evidence；
+6. 按 Loop Engineering 为 L-0019 建立 ADR、Test-first、实现、专项、`verify`、audit、E2E、Evidence、独立 Commit；
+7. 只推送 GitHub：`git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 push github codex/phase-3-lead-pipeline`。
 
-- R-015 保持 Mitigating；当前共享包与 Connector 未验收；
-- R-006 网页采集合规、SSRF、内容隔离仍留待 L-0019；
-- R-013 真实供应商凭证和部署验证未开始；
-- 只有需要真实凭证、供应商选择、不可逆业务决策或生产操作时才暂停请求用户确认。
+## 暂停条件
+
+仅在以下情况请求项目负责人确认：
+
+- 需要真实供应商或搜索服务选型；
+- 需要真实 API Key、生产凭证或真实网络采集；
+- 需要改变数据保留、合规许可或不可逆业务规则；
+- 需要生产部署、数据库迁移或真实客户数据回放。
+
+其余 L-0019 Mock/契约开发可按文档自主继续。

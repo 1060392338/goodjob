@@ -700,16 +700,34 @@
 - 下一循环 L-0018：CSV/Excel Connector 接入统一管道。
 
 
-## 2026-07-15 — Loop L-0018：CSV/Excel Connector（进行中）
+## 2026-07-15 — Loop L-0018：CSV/Excel Connector
 
 ### Register / Test-first
 
 - 新增 ADR-0017 与 L-0018 Evidence，设计为前后端复用同一工作簿安全 package。
 - 创建 file connector 专项契约测试并接入后端 test。
-- 首次专项按预期以 ERR_MODULE_NOT_FOUND 失败：@goodjob/workbook-security 尚未加入 workspace/package-lock。
+- 首次专项按预期以 `ERR_MODULE_NOT_FOUND` 失败：`@goodjob/workbook-security` 尚未加入 workspace/package-lock。
+- 完成 workspace 接线后再次按预期失败：`file-lead-ingestion-connector.js` 尚不存在。
 
-### 当前中断点
+### Implement
 
-- 已创建共享 package 骨架与类型声明，但未完成依赖接线、前端迁移和 Connector 实现。
-- 当前变化作为 Test-first/Red 检查点保存；L-0018 不得标记 Done。
-- 完整恢复步骤见 docs/engineering/HANDOFF.md。
+- 新增 `FileLeadIngestionConnector`，支持 CSV/XLSX/XLS、显式映射版本、SHA-256 文件摘要和逐行血缘。
+- 支持 `reject_batch`、`skip_invalid`、固定分页 cursor、上下文绑定 checkpoint、故障恢复和稳定幂等身份。
+- 将工作簿安全实现集中到 `@goodjob/workbook-security`；前端改为薄包装，前后端不再复制安全逻辑。
+- dependency-policy 检查共享 package、两个消费者、SheetJS 官方来源和完整性摘要。
+- 拒绝 Secret-like/Prototype Pollution 表头、危险公式、签名伪造和资源超限；不保存整行原文；真实外呼 0。
+
+### Verify / Review
+
+- 专项 PASS：formats 3、mappedRows 2、lineageFields 5、resumed true、duplicate writes 0、rejectBatchWrites 0、partial failure true、security rejections 5、真实外呼 0。
+- `npm run verify` PASS；repository security 165；traceability 16/16；API 167；tenant isolation 18；frontend self-test 44；workbook security PASS；Bundle Budget PASS。
+- `npm run audit:dependencies` PASS，0 vulnerabilities。
+- `npm run test:e2e` 首次完整运行 36/37，首条登录等待超时；单条复跑 PASS；随后完整复跑 PASS，37/37。
+- `git diff --check` PASS。
+
+### Record / Next
+
+- Test-first/Red Commit：`876ba19`；实现 Commit：`db6c711`。
+- 证据：`docs/engineering/evidence/L-0018-csv-excel-lead-connector.md`。
+- R-015 保持 Mitigating；真实客户样本、真实网络和供应商验收继续 Deferred。
+- 下一循环 L-0019：公开网页/搜索 Connector 安全执行边界。

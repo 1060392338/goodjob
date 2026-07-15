@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0018",
+  "currentIteration": "L-0019",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -496,13 +496,19 @@
         "docs/engineering/adr/ADR-0016-lead-ingestion-pipeline.md",
         "docs/engineering/adr/ADR-0017-csv-excel-lead-connector.md"
       ],
-      "note": "L-0009 完成配置与连接测试前置边界；L-0017 已完成统一标准化、血缘、稳定键、幂等 Sink 和检查点失败恢复契约。当前进入 L-0018 CSV/Excel Connector；网页/搜索和第三方 API 分别由 L-0019/L-0020 交付。",
+      "note": "L-0009 完成配置与连接测试前置边界；L-0017 完成统一标准化、血缘、稳定键、幂等 Sink 和检查点失败恢复；L-0018 完成 CSV/Excel Connector。当前进入 L-0019 公开网页/搜索安全 Connector；第三方 API 与阶段验收分别由 L-0020/L-0021 交付。",
       "increments": [
         {
           "loop": "L-0017",
           "status": "done",
           "deliveryCommit": "308cb67",
           "verification": "PASS: 7 normalized fields; deterministic record key; per-record checkpoint; interrupted resume; duplicate writes 0; Secret rejection; CRM lineage sink mapping; real outbound calls 0; verify; API 167; tenant 18; audit 0; E2E 37/37"
+        },
+        {
+          "loop": "L-0018",
+          "status": "done",
+          "deliveryCommit": "db6c711",
+          "verification": "PASS: CSV/XLSX/XLS; shared workbook-security; versioned mapping; file/batch/sheet/row lineage; reject_batch and skip_invalid; checkpoint resume; duplicate writes 0; security rejections 5; real outbound calls 0; verify; repository security 165; API 167; tenant 18; audit 0; final E2E 37/37"
         }
       ]
     },

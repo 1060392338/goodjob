@@ -3,7 +3,7 @@
 更新时间：2026-07-15
 当前分支：`codex/phase-3-lead-pipeline`
 当前阶段：阶段 3——获客数据管道
-整体状态：L-0017 已完成，L-0018 进行中
+整体状态：L-0018 已完成，L-0019 待启动
 
 ## 阶段门禁概览
 
@@ -12,7 +12,7 @@
 | 0 接管与安全基线 | Verification | Harness、生产配置门禁、工作簿安全、audit 0、E2E 37/37 | GitHub 历史扫描、Linux/Node 22 Actions、部署凭证轮换确认 |
 | 1 业务行为基线 | Baseline established | 后端 self-test、security test、167 个 API 操作、37 条 E2E | 远端 CI 固化；持续维护角色/API 矩阵 |
 | 2 可维护架构基础 | Accepted with carry-over | ADR-0005~0015；机器追踪门禁；后端 30 个 API 模块化；Gateway/Connector、SecretVault、线索外联 Repository/Unit of Work、AI 工作流持久化、前端懒加载与 Bundle Budget | 其他 Store Repository、剩余超大模块、真实 MySQL/部署/CI 演练已显式转入阶段 3/4/7，不作为本阶段完成项 |
-| 3 获客数据管道 | In progress | L-0017 已完成统一规范化、稳定键、逐记录血缘、幂等 Sink 和检查点恢复基础 | CSV/Excel、网页/搜索、第三方 API Connector 尚待实现；真实供应商验收需凭证 |
+| 3 获客数据管道 | In progress | L-0017 统一管道基础与 L-0018 CSV/Excel Connector 已完成；共享工作簿安全、映射、血缘、幂等、恢复和安全拒绝通过 | 网页/搜索、第三方 API Connector 与阶段验收尚待完成；真实供应商验收需凭证 |
 | 4~7 AI/协作/发布 | Backlog | ModelGateway、LangGraph Workflow Engine、持久化与统一 Adapter 设计已具备前置基础 | AI 功能 API/UI、三平台 Adapter 与正式发布门禁未完成 |
 
 详细阶段、验收和测试标准见 `DEVELOPMENT_PLAN.md`。
@@ -37,21 +37,22 @@
 | 前端性能 | 入口 1.90 kB，核心原型 389.65 kB；XLSX/ECharts/ZRender 已懒加载；384 kB HTML 与页面控制器拆分仍在 R-004/R-008 |
 | 远端 | GitHub `1060392338/goodjob` 为唯一交付远端；Gitee 不再操作 |
 
+## 最近完成循环
+
+**Loop L-0018：CSV/Excel Connector 接入统一管道——已完成**
+
+- 关联：`REQ-GJ-LEAD-001 / TASK-GJ-0201`；实现 Commit `db6c711`；
+- CSV/XLSX/XLS、共享工作簿安全解析、版本化映射、文件/批次/行血缘、reject_batch/skip_invalid、幂等和 checkpoint 恢复已通过；
+- 专项 PASS；`verify` PASS；repository security 165；API 167；tenant 18；audit 0；最终完整 E2E 37/37；真实外呼 0；
+- Evidence：`docs/engineering/evidence/L-0018-csv-excel-lead-connector.md`。
+
 ## 当前循环
 
-**Loop L-0018：CSV/Excel Connector 接入统一管道——进行中**
+**L-0019：公开网页/搜索 Connector 安全执行边界——待启动**
 
-- 关联：`REQ-GJ-LEAD-001 / TASK-GJ-0201`；
-- L-0017 已以 Commit `308cb67` 完成统一管道基础，专项、`verify`、audit 0 和 E2E 37/37 全部通过；
-- 范围：CSV/XLSX/XLS 安全解析、版本化字段映射、文件/批次/行血缘、逐行错误报告、幂等与检查点恢复；
-- 边界：复用现有工作簿安全解析边界，不接真实供应商、不使用真实凭证、不新增真实网络调用；
-- 后续：L-0019 网页/搜索、L-0020 第三方 API、L-0021 阶段验收。
-
-## 下一循环
-
-**L-0019：公开网页/搜索 Connector 安全执行边界**
-
-仅在 L-0018 的格式兼容、安全限制、字段映射、血缘、部分失败与恢复门禁通过后进入。
+- 必须先建立 ADR/Test-first 契约；
+- 覆盖域名许可、DNS/IP/重定向 SSRF 防护、robots/许可记录、限流、内容类型/大小/超时、恶意内容隔离、checkpoint、幂等和血缘；
+- 仅使用 Mock Transport/fixtures，真实网络、真实凭证和真实供应商调用保持 0。
 
 ## 阻塞与持续风险
 
