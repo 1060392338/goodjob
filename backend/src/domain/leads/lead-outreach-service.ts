@@ -37,6 +37,25 @@ function generatedKey() {
   return `generated:${randomUUID()}`;
 }
 
+function classifyExisting(existing: LeadOutreachRequest, currentPayloadHash: string) {
+  if (existing.payloadHash !== currentPayloadHash) return { status: "conflict" as const, request: existing };
+  if (existing.status === "succeeded") return { status: "duplicate" as const, request: existing };
+  if (existing.status === "pending") return { status: "pending" as const, request: existing };
+  return { status: "failed" as const, request: existing };
+}
+
+function syncOutreachRequest(request: LeadOutreachRequest) {
+  const store = getStore();
+  const existing = store.leadOutreachRequests.find((item) => item.id === request.id);
+  if (existing) {
+    Object.assign(existing, request);
+    return existing;
+  }
+  const added = { ...request };
+  store.leadOutreachRequests.unshift(added);
+  return added;
+}
+
 async function beginOutreach(
   user: SessionUser,
   lead: Lead,
@@ -49,18 +68,16 @@ async function beginOutreach(
   const rawKey = idempotencyKey?.trim() || generatedKey();
   const keyHash = digest(rawKey);
   const currentPayloadHash = payloadDigest(payload);
-  const existing = store.leadOutreachRequests.find((item) =>
-    item.leadId === lead.id
-    && item.operatorId === user.id
-    && item.action === action
-    && item.idempotencyKeyHash === keyHash
-  );
-  if (existing) {
-    if (existing.payloadHash !== currentPayloadHash) return { status: "conflict" as const, request: existing };
-    if (existing.status === "succeeded") return { status: "duplicate" as const, request: existing };
-    if (existing.status === "pending") return { status: "pending" as const, request: existing };
-    return { status: "failed" as const, request: existing };
-  }
+  const lookup = { leadId: lead.id, operatorId: user.id, action, idempotencyKeyHash: keyHash };
+  const existing = store.leadOutreachRepository
+    ? await store.leadOutreachRepository.findByIdempotency(lookup)
+    : store.leadOutreachRequests.find((item) =>
+      item.leadId === lead.id
+      && item.operatorId === user.id
+      && item.action === action
+      && item.idempotencyKeyHash === keyHash
+    );
+  if (existing) return classifyExisting(syncOutreachRequest(existing), currentPayloadHash);
 
   const now = new Date().toISOString();
   const request: LeadOutreachRequest = {
@@ -80,6 +97,13 @@ async function beginOutreach(
     createdAt: now,
     completedAt: ""
   };
+
+  if (store.leadOutreachRepository) {
+    const inserted = await store.leadOutreachRepository.insertPending(request);
+    const persisted = syncOutreachRequest(inserted.request);
+    return inserted.inserted ? { status: "new" as const, request: persisted } : classifyExisting(persisted, currentPayloadHash);
+  }
+
   store.leadOutreachRequests.unshift(request);
   try {
     await store.persist();
@@ -131,9 +155,6 @@ export async function recordSocialTouch(
     return { status: "ok", activity, lead, duplicate: true };
   }
 
-  const leadSnapshot = { ...lead };
-  const requestSnapshot = { ...begin.request };
-  const activitiesSnapshot = store.leadActivities;
   const now = new Date().toISOString();
   const activity: LeadActivity = {
     id: `la_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -144,18 +165,34 @@ export async function recordSocialTouch(
     nextFollowAt: input.nextFollowAt,
     createdAt: now
   };
-  store.leadActivities = [activity, ...store.leadActivities];
-  lead.lastActivityAt = "刚刚";
-  if (input.nextFollowAt) lead.nextFollowAt = input.nextFollowAt;
-  if (lead.status === "new") lead.status = "following";
-  Object.assign(begin.request, { status: "succeeded", activityId: activity.id, completedAt: now });
-  try {
-    await store.persist();
-  } catch (error) {
-    Object.assign(lead, leadSnapshot);
-    Object.assign(begin.request, requestSnapshot);
-    store.leadActivities = activitiesSnapshot;
-    throw error;
+  const nextLead: Lead = {
+    ...lead,
+    lastActivityAt: "刚刚",
+    ...(input.nextFollowAt ? { nextFollowAt: input.nextFollowAt } : {}),
+    ...(lead.status === "new" ? { status: "following" as const } : {})
+  };
+  const nextRequest: LeadOutreachRequest = { ...begin.request, status: "succeeded", activityId: activity.id, completedAt: now };
+
+  if (store.leadOutreachRepository) {
+    await store.leadOutreachRepository.completeSocialTouch({ request: nextRequest, lead: nextLead, activity });
+    Object.assign(lead, nextLead);
+    Object.assign(begin.request, nextRequest);
+    store.leadActivities = [activity, ...store.leadActivities];
+  } else {
+    const leadSnapshot = { ...lead };
+    const requestSnapshot = { ...begin.request };
+    const activitiesSnapshot = store.leadActivities;
+    Object.assign(lead, nextLead);
+    Object.assign(begin.request, nextRequest);
+    store.leadActivities = [activity, ...store.leadActivities];
+    try {
+      await store.persist();
+    } catch (error) {
+      Object.assign(lead, leadSnapshot);
+      Object.assign(begin.request, requestSnapshot);
+      store.leadActivities = activitiesSnapshot;
+      throw error;
+    }
   }
   return { status: "ok", activity, lead, duplicate: false };
 }
@@ -222,23 +259,28 @@ export async function sendLeadEmail(
     receipt = await gateway.send(user, { to: input.to, subject: input.subject, body: input.body });
   } catch (error) {
     const message = outboundEmailError(error, user);
-    const snapshot = { ...begin.request };
-    begin.request.status = uncertainEmailFailure(error) ? "pending" : "failed";
-    begin.request.errorMessage = message;
-    begin.request.completedAt = begin.request.status === "failed" ? new Date().toISOString() : "";
-    try {
-      await store.persist();
-    } catch (persistError) {
-      Object.assign(begin.request, snapshot);
-      throw persistError;
+    const nextRequest: LeadOutreachRequest = {
+      ...begin.request,
+      status: uncertainEmailFailure(error) ? "pending" : "failed",
+      errorMessage: message,
+      completedAt: uncertainEmailFailure(error) ? "" : new Date().toISOString()
+    };
+    if (store.leadOutreachRepository) {
+      await store.leadOutreachRepository.updatePending(nextRequest);
+      Object.assign(begin.request, nextRequest);
+    } else {
+      const snapshot = { ...begin.request };
+      Object.assign(begin.request, nextRequest);
+      try {
+        await store.persist();
+      } catch (persistError) {
+        Object.assign(begin.request, snapshot);
+        throw persistError;
+      }
     }
     return { status: "send_failed", message };
   }
 
-  const leadSnapshot = { ...lead };
-  const userSnapshot = { ...user };
-  const requestSnapshot = { ...begin.request };
-  const activitiesSnapshot = store.leadActivities;
   const sentAt = new Date().toISOString();
   const activity: LeadActivity = {
     id: `la_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -249,14 +291,20 @@ export async function sendLeadEmail(
     nextFollowAt: input.nextFollowAt,
     createdAt: sentAt
   };
-  store.leadActivities = [activity, ...store.leadActivities];
-  user.lastDevelopmentEmailAt = sentAt;
-  user.lastDevelopmentEmailTo = input.to;
-  user.lastDevelopmentEmailSubject = input.subject;
-  lead.lastActivityAt = "刚刚";
-  if (input.nextFollowAt) lead.nextFollowAt = input.nextFollowAt;
-  if (lead.status === "new") lead.status = "following";
-  Object.assign(begin.request, {
+  const nextLead: Lead = {
+    ...lead,
+    lastActivityAt: "刚刚",
+    ...(input.nextFollowAt ? { nextFollowAt: input.nextFollowAt } : {}),
+    ...(lead.status === "new" ? { status: "following" as const } : {})
+  };
+  const nextUser: User = {
+    ...user,
+    lastDevelopmentEmailAt: sentAt,
+    lastDevelopmentEmailTo: input.to,
+    lastDevelopmentEmailSubject: input.subject
+  };
+  const nextRequest: LeadOutreachRequest = {
+    ...begin.request,
     status: "succeeded",
     activityId: activity.id,
     externalMessageId: receipt.messageId,
@@ -264,15 +312,32 @@ export async function sendLeadEmail(
     subject: input.subject,
     errorMessage: "",
     completedAt: sentAt
-  });
-  try {
-    await store.persist();
-  } catch (error) {
-    Object.assign(lead, leadSnapshot);
-    Object.assign(user, userSnapshot);
-    Object.assign(begin.request, requestSnapshot);
-    store.leadActivities = activitiesSnapshot;
-    throw error;
+  };
+
+  if (store.leadOutreachRepository) {
+    await store.leadOutreachRepository.completeEmail({ request: nextRequest, lead: nextLead, user: nextUser, activity });
+    Object.assign(lead, nextLead);
+    Object.assign(user, nextUser);
+    Object.assign(begin.request, nextRequest);
+    store.leadActivities = [activity, ...store.leadActivities];
+  } else {
+    const leadSnapshot = { ...lead };
+    const userSnapshot = { ...user };
+    const requestSnapshot = { ...begin.request };
+    const activitiesSnapshot = store.leadActivities;
+    Object.assign(lead, nextLead);
+    Object.assign(user, nextUser);
+    Object.assign(begin.request, nextRequest);
+    store.leadActivities = [activity, ...store.leadActivities];
+    try {
+      await store.persist();
+    } catch (error) {
+      Object.assign(lead, leadSnapshot);
+      Object.assign(user, userSnapshot);
+      Object.assign(begin.request, requestSnapshot);
+      store.leadActivities = activitiesSnapshot;
+      throw error;
+    }
   }
   return { status: "ok", response: emailResponse(user, lead, begin.request, activity, false) };
 }

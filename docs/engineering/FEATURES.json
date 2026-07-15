@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0012",
+  "currentIteration": "L-0013",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -205,6 +205,52 @@
           "前端视图/控制器继续按单领域拆分",
           "Repository/Unit of Work"
         ]
+      }
+    },
+    {
+      "id": "REQ-GJ-ARCH-002",
+      "task": "TASK-GJ-0007",
+      "title": "Introduce Repository and Unit of Work for incremental lead-outreach persistence",
+      "phase": 2,
+      "status": "in_progress",
+      "priority": "P0",
+      "acceptance": [
+        "Lead outreach domain depends on a repository port rather than the MySQL driver",
+        "Pending insert and multi-row completion use row-level incremental SQL instead of persistAll",
+        "Social and email completion are atomic and rollback on any failure",
+        "Unique-key races and optimistic status conflicts fail without duplicate side effects",
+        "Memory and MySQL adapters follow the same repository contract",
+        "Public API, tenant scope, security gates, and existing business behavior do not regress"
+      ],
+      "tests": [
+        "npm run test:repository:lead-outreach --workspace backend",
+        "npm run test:routes:lead-outreach --workspace backend",
+        "npm run verify",
+        "npm run test:e2e",
+        "npm run audit:dependencies"
+      ],
+      "evidence": [
+        "docs/engineering/evidence/L-0013-repository-unit-of-work.md"
+      ],
+      "design": [
+        "docs/engineering/adr/ADR-0012-repository-unit-of-work-incremental-persistence.md"
+      ],
+      "dependencies": [
+        "REQ-GJ-ARCH-001"
+      ],
+      "nonGoals": [
+        "No full CrmStore rewrite",
+        "No production database or SMTP call",
+        "No public API or frontend change",
+        "No migration of unrelated domains in this loop"
+      ],
+      "progress": {
+        "currentSlice": {
+          "loop": "L-0013",
+          "scope": "Lead outreach Repository, Unit of Work, and row-level MySQL persistence",
+          "status": "in_progress",
+          "baselineCommit": "2f866cc"
+        }
       }
     },
     {

@@ -2,6 +2,7 @@ import { strict as assert } from "node:assert";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
 import { publicUser, signToken } from "../auth.js";
+import { createMemoryLeadOutreachRepository } from "../domain/leads/lead-outreach-repository.js";
 import type { OutboundEmailGateway } from "../gateways/outbound-email-gateway.js";
 import { getStore, memoryStore, setStore, type CrmStore } from "../store.js";
 import type { Lead, User } from "../types.js";
@@ -77,8 +78,17 @@ const leads: Lead[] = [
   lead("lead_deleted", "sales_eu", "europe", { deletedAt: "2026-07-14T08:00:00.000Z" })
 ];
 
-let persistCount = 0;
-let failAtPersist = -1;
+let repositoryCommitCount = 0;
+let failAtRepositoryCommit = -1;
+let fullSnapshotWrites = 0;
+const leadOutreachRepository = createMemoryLeadOutreachRepository({
+  leads,
+  users,
+  beforeCommit() {
+    repositoryCommitCount += 1;
+    if (repositoryCommitCount === failAtRepositoryCommit) throw new Error("fixture repository commit failure");
+  }
+});
 const testStore: CrmStore = {
   ...memoryStore,
   users,
@@ -87,12 +97,13 @@ const testStore: CrmStore = {
   customerActivities: [],
   leadActivities: [],
   leadOutreachRequests: [],
+  leadOutreachRepository,
   leadSourceEvents: [],
   deals: [],
   dealEvents: [],
   async persist() {
-    persistCount += 1;
-    if (persistCount === failAtPersist) throw new Error("fixture persist failure");
+    fullSnapshotWrites += 1;
+    throw new Error("lead outreach must not use full snapshot persistence");
   }
 };
 
@@ -192,7 +203,7 @@ try {
   assert.equal(testStore.leadOutreachRequests[0].status, "succeeded");
   assert.equal(testStore.leadOutreachRequests[0].idempotencyKeyHash.length, 64);
   assert.notEqual(testStore.leadOutreachRequests[0].idempotencyKeyHash, "social-key-001");
-  const persistAfterSocial = persistCount;
+  const commitsAfterSocial = repositoryCommitCount;
 
   const socialDuplicate = await request("/api/leads/lead_social/social-touch", {
     method: "POST",
@@ -202,7 +213,7 @@ try {
   assert.equal(socialDuplicate.response.status, 200);
   assert.equal(socialDuplicate.json.duplicate, true);
   assert.equal(activitiesFor("lead_social").length, 1);
-  assert.equal(persistCount, persistAfterSocial);
+  assert.equal(repositoryCommitCount, commitsAfterSocial);
 
   const socialConflict = await request("/api/leads/lead_social/social-touch", {
     method: "POST",
@@ -291,13 +302,13 @@ try {
   const leadBeforePersistFailure = { ...persistLead };
   const userBeforePersistFailure = { ...account };
   const persistBody = { to: "persist@buyer.test", subject: "Persist failure", body: "Gateway succeeds but final persistence fails." };
-  failAtPersist = persistCount + 2;
+  failAtRepositoryCommit = repositoryCommitCount + 2;
   const persistFailure = await request("/api/leads/lead_email_persist/send-email", {
     method: "POST",
     headers: bearer("sales_eu", "email-key-persist"),
     body: JSON.stringify(persistBody)
   });
-  failAtPersist = -1;
+  failAtRepositoryCommit = -1;
   assert.equal(persistFailure.response.status, 500);
   assert.deepEqual(persistLead, leadBeforePersistFailure);
   assert.deepEqual(account, userBeforePersistFailure);
@@ -313,6 +324,8 @@ try {
   assert.equal(persistRetry.response.status, 409);
   assert.equal(gatewayCallsByRecipient.get(persistBody.to), 1);
 
+  assert.equal(fullSnapshotWrites, 0);
+
   console.log(JSON.stringify({
     ok: true,
     outreachRoutes: [
@@ -323,7 +336,9 @@ try {
     persistedRequests: testStore.leadOutreachRequests.length,
     idempotencyVerified: true,
     pendingRecoveryVerified: true,
-    rollbackVerified: true
+    rollbackVerified: true,
+    repositoryCommitCount,
+    fullSnapshotWrites
   }, null, 2));
 } finally {
   server.close();
