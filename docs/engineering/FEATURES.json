@@ -42,6 +42,32 @@
       }
     },
     {
+      "id": "REQ-GJ-ENG-AUDIT-001",
+      "task": "TASK-GJ-0009",
+      "title": "机器可验证的追踪完整性与阶段 2 收口",
+      "phase": 2,
+      "status": "in_progress",
+      "priority": "P1",
+      "acceptance": [
+        "REQ/TASK/ADR/Commit/Test/Evidence 可自动检查且双向反查",
+        "阶段 2 done 项目均有完成日期、结构化验证、证据与有效 Commit",
+        "完整 verify、dependency audit 和 Playwright 37/37 通过",
+        "已完成、未完成和后续转移项不混报"
+      ],
+      "tests": [
+        "npm run test:traceability",
+        "npm run verify",
+        "npm run audit:dependencies",
+        "npm run test:e2e"
+      ],
+      "design": [
+        "docs/engineering/adr/ADR-0015-machine-verifiable-traceability.md"
+      ],
+      "evidence": [
+        "docs/engineering/evidence/L-0016-phase-2-acceptance.md"
+      ]
+    },
+    {
       "id": "REQ-GJ-SEC-001",
       "task": "TASK-GJ-0002",
       "title": "处置默认账号、仓库密钥与敏感文件风险",
@@ -205,6 +231,14 @@
           "前端视图/控制器继续按单领域拆分",
           "Repository/Unit of Work"
         ]
+      },
+      "completedAt": "2026-07-15",
+      "verification": {
+        "module": "PASS: provider types, selection state, and 4 API client contracts extracted",
+        "tests": "PASS: 8 state cases; 4 API contracts; frontend self-test 41; verify; API 167; tenant 18; audit 0; Playwright 37/37",
+        "evidence": [
+          "docs/engineering/evidence/L-0010-frontend-lead-source-center.md"
+        ]
       }
     },
     {
@@ -254,7 +288,14 @@
           "verification": "PASS: memory/mysql repository contract; 21 row-level statements; MySQL commit 2/rollback 2; route repository commits 10; full snapshot writes 0; API 167; tenant 18; verify; E2E 37/37; audit 0"
         }
       },
-      "completedAt": "2026-07-15"
+      "completedAt": "2026-07-15",
+      "verification": {
+        "repository": "PASS: memory/mysql contract; 21 row-level statements; commit 2; rollback 2; full snapshot writes 0",
+        "tests": "PASS: outreach routes; verify; API 167; tenant 18; audit 0; Playwright 37/37",
+        "evidence": [
+          "docs/engineering/evidence/L-0013-repository-unit-of-work.md"
+        ]
+      }
     },
     {
       "id": "REQ-GJ-FE-PERF-001",
@@ -339,7 +380,14 @@
           "verification": "PASS: 6 schema tables; cross-process recovery; concurrent approval effect once; decision conflict fail-closed; permission recheck; stable-key lease recovery; Secret rejection; API 167; tenant 18; verify; E2E 37/37; audit 0"
         }
       },
-      "completedAt": "2026-07-15"
+      "completedAt": "2026-07-15",
+      "verification": {
+        "persistence": "PASS: 6 tables; cross-instance recovery; unique approval; stable effect key; lease recovery; Secret rejection",
+        "tests": "PASS: workflow persistence/AI; verify; API 167; tenant 18; audit 0; Playwright 37/37",
+        "evidence": [
+          "docs/engineering/evidence/L-0014-ai-workflow-mysql-persistence.md"
+        ]
+      }
     },
     {
       "id": "REQ-GJ-AI-001",
@@ -404,7 +452,10 @@
         "evidence": [
           "docs/engineering/evidence/L-0011-ai-workflow-engine.md"
         ]
-      }
+      },
+      "design": [
+        "docs/engineering/adr/ADR-0010-langgraph-ai-workflow-engine.md"
+      ]
     },
     {
       "id": "REQ-GJ-LEAD-001",
@@ -576,6 +627,14 @@
           "deliveryCommit": "a3e2dcc",
           "verification": "PASS: vault encryption/context/tamper/migration/rotation/revocation/masking; API 167; tenant 18; verify; E2E 37/37; audit 0"
         }
+      },
+      "completedAt": "2026-07-15",
+      "verification": {
+        "vault": "PASS: encryption, context binding, tamper rejection, migration, rotation, revocation, masking, startup gates",
+        "tests": "PASS: vault; verify; API 167; tenant 18; audit 0; Playwright 37/37",
+        "evidence": [
+          "docs/engineering/evidence/L-0012-secret-vault.md"
+        ]
       }
     }
   ]
