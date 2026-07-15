@@ -489,16 +489,18 @@
         "docs/engineering/evidence/L-0009-lead-source-connector.md",
         "docs/engineering/evidence/L-0017-lead-ingestion-pipeline.md",
         "docs/engineering/evidence/L-0018-csv-excel-lead-connector.md",
-        "docs/engineering/evidence/L-0019-public-web-search-connector.md"
+        "docs/engineering/evidence/L-0019-public-web-search-connector.md",
+        "docs/engineering/evidence/L-0020-third-party-api-provider-boundary.md"
       ],
       "design": [
         "docs/engineering/adr/ADR-0003-external-adapters.md",
         "docs/engineering/adr/ADR-0008-lead-source-connector-boundary.md",
         "docs/engineering/adr/ADR-0016-lead-ingestion-pipeline.md",
         "docs/engineering/adr/ADR-0017-csv-excel-lead-connector.md",
-        "docs/engineering/adr/ADR-0018-public-web-search-connector.md"
+        "docs/engineering/adr/ADR-0018-public-web-search-connector.md",
+        "docs/engineering/adr/ADR-0019-third-party-api-provider-boundary.md"
       ],
-      "note": "L-0017 统一管道、L-0018 CSV/Excel、L-0019 公开网页/搜索安全 Connector 已完成。当前进入 L-0020 第三方 API Connector 插件边界；L-0021 阶段验收尚未开始。真实供应商、真实凭证和真实网络继续 Deferred。",
+      "note": "L-0017~L-0019 已完成。L-0020 正在建立第三方 API Provider 插件边界，当前已完成 Test-first 契约并确认真实 Red，实现尚未开始；L-0021 尚未开始。真实供应商、凭证和网络继续 Deferred。",
       "increments": [
         {
           "loop": "L-0017",
@@ -521,6 +523,11 @@
           ],
           "deliveryCommit": "3b0c366",
           "verification": "PASS: web connector 2 documents; permission/robots/content lineage; SSRF/DNS/redirect/rate/content isolation; checkpoint resume; duplicate writes 0; security rejections 12; real outbound calls 0; verify repository security 169, traceability 16/16, API 167, tenant 18; audit 0; E2E 37/37"
+        },
+        {
+          "loop": "L-0020",
+          "status": "in_progress",
+          "verification": "Test-first PASS as process evidence: complete contract produced ERR_MODULE_NOT_FOUND before implementation; implementation pending"
         }
       ]
     },

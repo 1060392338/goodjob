@@ -1,4 +1,4 @@
-﻿# 实施日志
+# 实施日志
 
 ## 2026-07-13 — Loop L-0001：接管与工程 Harness
 
@@ -781,3 +781,24 @@
 - Evidence：`docs/engineering/evidence/L-0019-public-web-search-connector.md`。
 - R-006 保持 Open，R-015 保持 Mitigating；真实网络、供应商、凭证和客户数据继续 Deferred。
 - 下一循环 L-0020：第三方 API Connector 插件边界。
+
+
+## 2026-07-15 — Loop L-0020：第三方 API Provider 插件边界（进行中）
+
+### Discover / Register
+
+- 新增 ADR-0019 与 L-0020 Evidence，继续关联 `REQ-GJ-LEAD-001 / TASK-GJ-0201`、R-006/R-013/R-015。
+- 明确只建立 Mock Provider 插件边界，不选择真实供应商、不接真实凭证、不进行真实外呼。
+
+### Test-first
+
+- 专项测试已覆盖 Registry、credential handle、配置、两页分页隔离、Mapper/血缘、Pipeline 恢复/幂等、Retry-After、指数退避、最大重试、额度/预算、错误分类、无效响应、checkpoint 篡改和 Secret 拒绝。
+- 实现文件不存在时运行 `npm run test:connector:api-leads --workspace backend`，真实返回 `ERR_MODULE_NOT_FOUND`，退出码 1，真实外呼 0。
+
+### 会话收口审计
+
+- 纠正并持续更新 `PROJECT_STATUS.md`、`FEATURES.json` 和 L-0020 Evidence：先记录契约草拟，再以真实 `ERR_MODULE_NOT_FOUND` 更新为 Test-first/Red 已完成，不能误报实现已通过。
+- 扩充 `HANDOFF.md`：记录稳定基线、本地未提交文件、已写/待写测试契约、下一会话命令顺序、完成定义与暂停条件。
+- 修复 `L-0017-lead-ingestion-pipeline.md` 的历史编码损坏，恢复目标、Test-first、实现、专项、完整门禁、风险和交接证据。
+- 明确根目录 `DEVELOPMENT_STATUS.md` 仅为历史业务快照，工程状态以 `docs/engineering/` 为准。
+- 文档校验：`FEATURES.json` 可解析；`npm run test:traceability` PASS（16 REQ / 16 TASK，currentIteration L-0020）；`git diff --check` PASS；工程文档编码/占位审计 PASS。

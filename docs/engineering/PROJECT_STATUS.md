@@ -3,7 +3,7 @@
 更新时间：2026-07-15
 当前分支：`codex/phase-3-lead-pipeline`
 当前阶段：阶段 3——获客数据管道
-整体状态：L-0019 已完成，L-0020 待启动
+整体状态：L-0019 已完成，L-0020 Test-first/Red 已完成（实现未开始）
 
 ## 阶段门禁概览
 
@@ -49,13 +49,20 @@
 
 ## 当前循环
 
-**L-0020：第三方 API Connector 编排与供应商插件边界——待启动**
+**L-0020：第三方 API Connector 编排与供应商插件边界——进行中（Test-first/Red 已完成）**
 
-- 必须先建立 ADR、Evidence 和 Test-first/Red 契约；
+- ADR、Evidence 和完整专项失败契约已建立；真实 Red 为缺少 `api-lead-ingestion-connector.js` 的 `ERR_MODULE_NOT_FOUND`；
 - 统一 Provider 插件边界，不把供应商字段、认证或分页细节泄漏到领域管道；
 - 在 Mock Provider 下覆盖分页、游标、退避、Retry-After、额度、错误分类、checkpoint、恢复、幂等和血缘；
 - 不选择真实供应商，不接真实凭证，不进行真实外呼。
 
+## 当前会话检查点
+
+- 稳定基线：Commit `cdf346d`；当前分支 `codex/phase-3-lead-pipeline`。
+- 本地存在未提交的 L-0020 ADR、Evidence、专项测试和脚本/台账变更，禁止 reset/clean。
+- `api-lead-ingestion-connector-test.ts` 已覆盖 Registry、分页/cursor、Mapper/血缘、Pipeline 恢复/幂等、Retry-After、指数退避、最大重试、不可重试错误、预算、无效响应、Secret 拒绝和 checkpoint 篡改。
+- 生产实现 `api-lead-ingestion-connector.ts` 尚不存在；真实 Red 已保存，完整 `verify`/audit/E2E 尚未用于本循环验收。
+- 精确续作顺序见 `HANDOFF.md`，不得把 L-0019 的 PASS 结果误记为 L-0020 已通过。
 ## 阻塞与持续风险
 
 - GitHub 仓库当前为 Public；是否调整为 Private 需由项目负责人确认。
