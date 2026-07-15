@@ -164,7 +164,7 @@
       "task": "TASK-GJ-0005",
       "title": "渐进拆分前端超大模块并建立领域边界",
       "phase": 2,
-      "status": "in_progress",
+      "status": "done",
       "priority": "P0",
       "acceptance": [
         "线索来源中心类型、选择规则和 4 个配置 API 客户端迁出 prototype-api.ts",
@@ -176,7 +176,9 @@
         "npm run verify",
         "npm run test:e2e"
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/engineering/evidence/L-0010-frontend-lead-source-center.md"
+      ],
       "design": [
         "docs/engineering/adr/ADR-0009-frontend-lead-source-center-boundary.md"
       ],
@@ -184,15 +186,25 @@
         "currentSlice": {
           "loop": "L-0010",
           "scope": "前端线索来源中心类型、选择状态和配置 API 客户端边界",
-          "status": "in_progress",
+          "status": "done",
           "baselineCommit": "3662a11",
           "acceptance": [
             "默认来源选择排除 ai_search 且用户手动选择在刷新后保留",
             "保存、测试和删除保持既有 URL、方法、请求体与选择语义",
             "页面 DOM、文案、按钮状态、导航和移动端行为不变",
             "专项测试、verify、E2E、安全与依赖门禁全部通过"
-          ]
-        }
+          ],
+          "deliveryCommit": "487438b",
+          "verification": "PASS: state rules 8; API contracts 4; frontend self-test 41; API 167; tenant isolation 18; npm run verify; Playwright 37/37; audit 0"
+        },
+        "completedSlices": [
+          "线索来源中心 Provider 类型、选择状态和 4 个配置 API 客户端边界"
+        ],
+        "nextSlices": [
+          "LangGraph.js 与 AiWorkflowEngine 技术验证",
+          "前端视图/控制器继续按单领域拆分",
+          "Repository/Unit of Work"
+        ]
       }
     },
     {

@@ -386,3 +386,45 @@
 - 证据：`docs/engineering/evidence/L-0009-lead-source-connector.md`。
 - L-0009 切片完成；`REQ-GJ-ARCH-001` 与阶段 2 继续 `in_progress`，`REQ-GJ-LEAD-001` 继续 backlog。
 - 下一循环 L-0010 建议从前端 `prototype-api.ts` 选择“线索来源中心”单一切片，先建立模块 self-test，再迁移；不得同时重写 UI、状态管理或完整搜索。
+
+## 2026-07-15 — Loop L-0010：前端线索来源中心模块边界
+
+### Orient / Select
+
+- 基线 Commit：`3662a11`；分支：`codex/phase-1-route-modularization`。
+- 登记 `REQ-GJ-FE-001 / TASK-GJ-0005`，关联阶段 2 的 `REQ-GJ-ARCH-001`。
+- 只选择 Provider 类型、默认/手动选择状态和来源配置 4 个 API 客户端；完整搜索、UI 重写、状态管理框架、数据库、真实模型/数据源均排除。
+- 复核 R-004/R-008：本循环降低维护影响面，不宣称完成代码分割或关闭主包风险。
+
+### Plan / Test first
+
+- 新增 `ADR-0009`，冻结 API、DOM、文案、按钮状态、移动端和回滚边界。
+- 先创建专项测试；首次因生产模块不存在按预期失败。
+- 模块实现后专项测试覆盖 8 组选择状态和 4 个 API 契约。
+- self-test 首次发现 API 字符串已迁出原文件；通过扩展检查源并新增模块标识处理，未删除或放宽断言。
+
+### Implement
+
+- 新增 `lead-source-center.ts`，集中 Provider 类型、纯状态转换和可注入 API 客户端。
+- `prototype-api.ts` 通过 `createLeadSourceCenterClient(api)` 装配新模块，保留 DOM/Modal/Toast/导航和完整搜索执行。
+- 新增独立测试脚本并纳入前端统一 `test`。
+- `prototype-api.ts` 11745 → 11717 行，净减少 28 行；无数据库变化、无新生产依赖。
+
+### Verify / Review
+
+- `npm run test:lead-source-center --workspace frontend`：PASS；8 组状态、4 个 API 契约。
+- `npm run test --workspace frontend`：PASS；self-test 41 项。
+- `npm run build --workspace frontend`：PASS；596 modules transformed。
+- `npm run verify`：PASS。
+- `npm run test:security`：PASS；API 167；跨模块租户隔离 18。
+- `npm run test:e2e`：PASS，Chromium 37/37。
+- `npm run audit:dependencies`：PASS，0 vulnerabilities。
+- 代码暂存后 `npm run test:repo-security`：PASS，125 个文件；`git diff --cached --check`：PASS。
+- Review 确认 4 个 API、默认排除 AI、刷新保留、保存/测试/删除、DOM 和移动端语义未改变。
+
+### Record / Next
+
+- 代码 Commit：`487438b`。
+- 证据：`docs/engineering/evidence/L-0010-frontend-lead-source-center.md`。
+- L-0010 切片完成；阶段 2 继续 `in_progress`。
+- 下一循环建议 L-0011：LangGraph.js + `AiWorkflowEngine` 技术验证，只使用 Mock ModelGateway，验证暂停/恢复、人工确认、权限、幂等和审计；失败则不引入生产依赖。
