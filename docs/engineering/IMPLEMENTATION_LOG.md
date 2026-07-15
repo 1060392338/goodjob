@@ -731,3 +731,12 @@
 - 证据：`docs/engineering/evidence/L-0018-csv-excel-lead-connector.md`。
 - R-015 保持 Mitigating；真实客户样本、真实网络和供应商验收继续 Deferred。
 - 下一循环 L-0019：公开网页/搜索 Connector 安全执行边界。
+
+
+## 2026-07-15 — Loop L-0019：公开网页/搜索安全 Connector（进行中）
+
+### Register / Test-first
+
+- 新增 ADR-0018 与 L-0019 Evidence，关联 `REQ-GJ-LEAD-001 / TASK-GJ-0201`、R-006/R-015。
+- 专项契约先锁定 allowlist、DNS/IP/重定向、robots/许可、租户限流、内容限制/隔离、分页/checkpoint、恢复、幂等和真实外呼 0。
+- 首次专项实际运行以 `ERR_MODULE_NOT_FOUND` 失败，缺少 `web-lead-ingestion-connector.js`；当前仅保存 Test-first/Red 检查点，不得标记 Done。

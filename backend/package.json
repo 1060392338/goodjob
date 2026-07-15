@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "start:mysql": "cross-env CRM_STORE=mysql node dist/server.js",
     "provision:beta-admins": "tsx src/provision-beta-admins.ts",
-    "test": "npm run test:self && npm run test:workflow:ai && npm run test:workflow:persistence && npm run test:vault && npm run test:repository:lead-outreach && npm run test:pipeline:lead-ingestion && npm run test:connector:file-leads",
+    "test": "npm run test:self && npm run test:workflow:ai && npm run test:workflow:persistence && npm run test:vault && npm run test:repository:lead-outreach && npm run test:pipeline:lead-ingestion && npm run test:connector:file-leads && npm run test:connector:web-leads",
     "test:security": "cross-env NODE_ENV=test JWT_SECRET=goodjob-security-test-secret-at-least-32-characters tsx src/security-test.ts",
     "test:routes": "npm run test:routes:core && npm run test:routes:customers && npm run test:routes:leads && npm run test:routes:lead-outreach && npm run test:routes:lead-conversion && npm run test:gateway:model && npm run test:routes:ai-config && npm run test:connector:lead-source && npm run test:routes:lead-source-config",
     "test:routes:core": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/routes-test.ts",
@@ -28,7 +28,8 @@
     "test:repository:lead-outreach": "cross-env NODE_ENV=test tsx src/persistence/lead-outreach-repository-test.ts",
     "test:workflow:persistence": "cross-env NODE_ENV=test tsx src/ai/mysql-ai-workflow-persistence-test.ts",
     "test:pipeline:lead-ingestion": "cross-env NODE_ENV=test tsx src/domain/leads/lead-ingestion-pipeline-test.ts",
-    "test:connector:file-leads": "cross-env NODE_ENV=test tsx src/connectors/file-lead-ingestion-connector-test.ts"
+    "test:connector:file-leads": "cross-env NODE_ENV=test tsx src/connectors/file-lead-ingestion-connector-test.ts",
+    "test:connector:web-leads": "cross-env NODE_ENV=test tsx src/connectors/web-lead-ingestion-connector-test.ts"
   },
   "dependencies": {
     "@langchain/core": "1.1.48",
