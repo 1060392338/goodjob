@@ -1,6 +1,6 @@
 # GoodJob 正式开发阶段计划
 
-更新时间：2026-07-13
+更新时间：2026-07-15
 
 本计划以当前 Gitee GoodJob 代码和业务行为为唯一基线，不采用“先做一个不可维护 MVP、以后再重写”的方式。每个阶段都以可运行代码、自动测试、追踪矩阵、ADR、证据和回顾作为交付物。
 
@@ -39,7 +39,7 @@
 
 - 阶段 0 的本地代码门禁已完成；远端 GitHub 历史扫描、Actions 和部署凭证轮换仍在验证。
 - 阶段 1 已由现有 self-test、security test、167 个 OpenAPI 操作和 37 条 E2E 建立首版行为基线。
-- 当前进入阶段 2，执行 `REQ-GJ-ARCH-001 / TASK-GJ-0003`，坚持每个 Loop 只迁移一个领域切片。
+- 当前处于阶段 2：后端 30 个 API、外部 Gateway/Connector、首个前端领域模块和 `AiWorkflowEngine` 编排技术验证已完成；Repository/Unit of Work、凭证安全、MySQL 工作流状态和前端剩余模块仍待完成。`REQ-GJ-AI-ORCH-001 / TASK-GJ-0102` 只形成阶段 4/5 前置边界，不代表 AI 功能阶段已完成。
 
 ## 变更控制
 

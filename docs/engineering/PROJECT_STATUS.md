@@ -1,4 +1,4 @@
-﻿# 项目实施状态
+# 项目实施状态
 
 更新时间：2026-07-15
 当前分支：`codex/phase-1-route-modularization`
@@ -11,8 +11,8 @@
 |---|---|---|---|
 | 0 接管与安全基线 | Verification | Harness、生产配置门禁、工作簿安全、audit 0、E2E 37/37 | GitHub 历史扫描、Linux/Node 22 Actions、部署凭证轮换确认 |
 | 1 业务行为基线 | Baseline established | 后端 self-test、security test、167 个 API 操作、37 条 E2E | 远端 CI 固化；持续维护角色/API 矩阵 |
-| 2 可维护架构基础 | In progress | ADR-0005~0009；后端 30 个 API 已模块化；邮件、模型、来源 Connector 和首个前端领域模块边界已建立 | 前端剩余超大模块、Repository/Unit of Work、剩余集成路由继续拆分 |
-| 3~7 数据/AI/协作/发布 | Backlog | ADR-0002/0003 与功能台账；阶段 3/4 已有前置 Gateway/Connector | 依赖阶段 2 稳定边界；真实凭证和供应商尚未指定 |
+| 2 可维护架构基础 | In progress | ADR-0005~0010；后端 30 个 API 已模块化；邮件、模型、来源 Connector、首个前端领域模块和 AI 工作流编排边界已建立 | 前端剩余超大模块、Repository/Unit of Work、凭证安全、MySQL 工作流状态和剩余集成路由继续拆分 |
+| 3~7 数据/AI/协作/发布 | Backlog | 阶段 3/4/5 已有前置 Connector、Gateway 与 Workflow Engine 技术验证 | 真实凭证和供应商未指定；完整来源管道、AI 功能 API/UI、协作 Adapter 与正式发布门禁未完成 |
 
 详细阶段、验收和测试标准见 `DEVELOPMENT_PLAN.md`。
 
@@ -21,47 +21,51 @@
 | 项目 | 当前事实 |
 |---|---|
 | 业务基线 | 当前 GoodJob 业务功能和行为为唯一基线，不进行 MVP 式推倒重写 |
-| 前端 | React 19、Vite、TypeScript；`prototype-api.ts` 11745 → 11717 行；线索来源类型、选择状态和 4 个配置 API 客户端已迁入独立模块 |
+| 前端 | React 19、Vite、TypeScript；`prototype-api.ts` 11717 行；线索来源类型、选择状态和 4 个配置 API 客户端已迁入独立模块 |
 | 后端 | Express、TypeScript；`server.ts` 5823 行，系统/认证/客户/线索/AI 配置/来源配置共 30 个 API 已迁出并显式装配 |
-| 数据 | 支持 memory 与 MySQL；`lead_outreach_requests` 记录外联幂等；生产启动禁止 memory store |
-| 外部副作用 | SMTP 通过 `OutboundEmailGateway`；模型 HTTP 通过 `ModelGateway`；来源连接测试通过 `LeadSourceConnector`；完整来源搜索仍沿用既有 Provider 路径 |
-| AI 边界 | 三模型协议已统一传输契约；LangGraph.js 尚未引入；完整 Prompt/Schema 版本、用量、重试、审计仍属阶段 4 backlog |
-| 来源边界 | Provider 元数据、配置和连接测试已统一；完整标准化搜索、分页/检查点、重试、幂等摄取和来源证据仍属阶段 3 backlog |
-| 测试 | `verify` 已包含九组后端路由/Gateway/Connector 门禁和前端来源中心专项契约测试 |
+| 数据 | 支持 memory 与 MySQL；`lead_outreach_requests` 记录外联幂等；生产启动禁止 memory store；AI 工作流尚无正式 MySQL 表 |
+| 外部副作用 | SMTP 通过 `OutboundEmailGateway`；模型 HTTP 通过 `ModelGateway`；来源连接测试通过 `LeadSourceConnector` |
+| AI 编排 | `AiWorkflowEngine` + LangGraph.js 技术验证完成；模型只能经 ModelGateway；支持暂停/恢复、确认/驳回/重跑、权限复检、幂等模拟写入和 Trace 审计 |
+| AI 持久化 | 当前仅使用 MemorySaver 技术验证；Checkpoint 不保存 API Key；跨进程/MySQL 恢复尚未实现 |
+| AI 依赖 | 精确锁定 LangGraph 1.4.8、Checkpoint 1.1.3、Core 1.1.48、Zod 3.25.76，并纳入版本/完整性门禁 |
+| 测试 | `verify` 已包含 AI 工作流专项测试；专项为 8 个运行、8 次 Mock 模型调用、3 次模拟写入、重复/驳回/越权额外写入 0 |
 | API 契约 | OpenAPI 与注册路由均保持 167 个操作；跨模块租户隔离 18 |
-| E2E | Playwright 37/37 |
-| 安全 | `npm audit --audit-level=high` 为 0；模型和来源 Key at-rest 加密、历史 Secret Scan 与部署凭证仍待闭环 |
-| 前端性能 | 生产主包约 1.394 MB；L-0010 仅完成结构拆分，代码分割风险 R-008 仍未关闭 |
+| E2E | Playwright 最终 37/37；首次中断异常和处理已在 L-0011 证据留痕 |
+| 安全 | `npm audit --audit-level=high` 最终为 0；模型和来源 Key at-rest 加密、历史 Secret Scan 与部署凭证仍待闭环 |
+| 前端性能 | 生产主包约 1.394 MB；代码分割风险 R-008 仍未关闭 |
 | 远端 | GitHub `1060392338/goodjob` 为唯一交付远端；Gitee 不再操作 |
 
 ## 当前循环
 
-**Loop L-0010：前端线索来源中心模块边界——本地 DoD 完成**
+**Loop L-0011：LangGraph.js 与 AiWorkflowEngine 技术验证——本地 DoD 完成**
 
-- 关联需求/任务：`REQ-GJ-FE-001 / TASK-GJ-0005`；关联架构：`REQ-GJ-ARCH-001 / TASK-GJ-0003`；
-- 基线：`3662a11`；代码交付：`487438b`；
-- 设计：`ADR-0009`；证据：`evidence/L-0010-frontend-lead-source-center.md`；
-- 范围：Provider 类型、默认选择、刷新/切换规则和来源配置 4 个 API 客户端迁出 `prototype-api.ts`；
-- 兼容：DOM、Modal、Toast、按钮状态、导航、API 请求和完整搜索路径不变；
-- Test first：首次专项测试因模块不存在失败；实现后 8 组状态规则和 4 个 API 契约通过；
-- 回归：`verify` PASS、security API 167/tenant 18、audit 0、Playwright 37/37；
-- 规模：`prototype-api.ts` 11745 → 11717 行，净减少 28 行；无数据库变化、无新生产依赖；
-- 状态：L-0010 切片完成；阶段 2 继续 `in_progress`。
+- 关联：`REQ-GJ-AI-ORCH-001 / TASK-GJ-0102`；实现 Commit：`356200a`；设计：ADR-0010；
+- 工作流：读取权限 → Mock 评分 → 严格结构校验 → 暂停 → 采纳/驳回/重跑 → 权限复检 → 幂等模拟写入 → 审计；
+- 安全：ModelGateway 是唯一模型入口；配置 Key 不进入 Snapshot、审计或 Checkpoint；真实模型外呼 0；
+- 幂等：顺序和并发重复确认额外写入均为 0；
+- 恢复：共享 MemorySaver 时，新 Engine 实例可恢复暂停运行；不宣称 MySQL/跨进程恢复完成；
+- 回归：`verify` PASS、API 167、tenant isolation 18、audit 0、Playwright 37/37；
+- 证据：`evidence/L-0011-ai-workflow-engine.md`。
 
-## 下一优先级
+## 下一循环建议
 
-1. 建议启动 L-0011：LangGraph.js 技术验证与 ADR，只建立 `AiWorkflowEngine` 编排边界。
-2. 使用 Mock ModelGateway 验证“读取线索 → AI 评分 → 人工确认 → 幂等模拟写入”的暂停、恢复、驳回和重复确认。
-3. 不使用真实模型 Key，不写生产 CRM，不改变现有 167 个 API；MySQL Checkpoint 方案必须先决策，不得假设官方直接支持。
-4. 若技术验证不满足权限、幂等、审计和恢复门禁，则不引入生产依赖，继续使用现有领域服务 + ModelGateway。
-5. 后续仍需继续前端视图/控制器拆分、Repository/Unit of Work、阶段 3 完整来源管道和阶段 4 AI 闭环。
+**L-0012：模型/来源凭证 SecretVault 边界与迁移策略**
 
-## 阻塞项
+1. 登记独立 REQ/TASK/ADR，冻结 KMS/信封加密或外部 Secret 引用方案；
+2. 先覆盖模型与来源 Key 的写入、读取、掩码、轮换、吊销和旧明文迁移；
+3. 日志、错误、备份、导出和审计不得出现明文 Key；
+4. 只使用测试密钥和 Mock Vault，不接真实云 KMS 或供应商凭证；
+5. 迁移/回滚、双读/双写窗口、启动门禁和损坏密文处理必须可测试；
+6. R-012/R-013 未满足前，不把 AiWorkflowEngine 接入真实模型评分；
+7. SecretVault 边界稳定后，再进入线索评分预览/确认 API 与前端体验。
+
+## 阻塞与持续风险
 
 - GitHub 仓库当前为 Public；是否调整为 Private 需由项目负责人确认。
 - GitHub Actions、历史 Secret Scan 与分支保护尚未形成远端通过证据。
 - 未确认现有部署实例清单，无法证明历史默认凭证已全部失效。
-- `pending` 邮件尚无运维查询/人工确认界面，当前只能拒绝相同键自动重放。
-- `ai_model_configs.api_key` 与 `lead_source_configs.api_key` 仍为明文 at-rest；真实 Key 正式投入前需加密或外部 Secret 引用。
-- 第三方线索数据厂商未指定；通用 Connector 不阻塞架构建设，但完整供应商验收无法开始。
-- 钉钉、企微、飞书当前只保留统一 Adapter 入口与 Mock 计划，不需要真实企业凭证。
+- `pending` 邮件尚无运维查询/人工确认界面。
+- R-012/R-013：模型与来源 API Key 明文 at-rest，真实 Key 禁止投入。
+- R-014：正式工作流 MySQL 表、事务、并发、崩溃恢复和版本迁移未实现。
+- 第三方线索数据厂商未指定；完整供应商验收无法开始。
+- 钉钉、企微、飞书当前只保留统一 Adapter 入口与 Mock 计划。

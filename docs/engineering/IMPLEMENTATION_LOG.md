@@ -444,3 +444,36 @@
 - 先创建专项测试并记录预期失败，再实现生产模块。
 - 验收必须证明未确认/驳回/越权写入为 0、重复确认只写一次、暂停可恢复、每步可审计、Secret 不入 checkpoint、真实外呼为 0。
 - 完整验证后再决定是否保留 LangGraph 生产依赖；审计或兼容性不通过则回退到 GoodJob 自有状态机。
+
+### Implement
+
+- 引入并精确锁定 `@langchain/langgraph@1.4.8`、`@langchain/core@1.1.48`、`zod@3.25.76`；锁文件中的 Checkpoint 为 `1.1.3`。
+- 新增 `backend/src/ai/ai-workflow-engine.ts`：
+  - LangGraph 状态图只负责读取、评分、暂停、恢复和分支；
+  - 模型配置运行时解析，Checkpoint 只保存 `modelConfigId`，不保存 API Key；
+  - 模型调用只经过注入的 `ModelGateway`；
+  - 领域读取、权限和写入只经过注入端口；
+  - `approve/reject/rerun` 统一确认协议；
+  - 写入前二次权限检查和稳定幂等键；
+  - 每个关键步骤写入带 Trace ID 的审计事件。
+- 新增进程内原子 Effect Store 和 MemorySaver 工厂，仅用于本地技术验证；未新增数据库表或 HTTP API。
+- 新增依赖策略门禁，锁定 LangGraph、Checkpoint、Core 和 Zod 的版本与 SHA-512 完整性。
+- 后端统一 `test` 已纳入 AI 工作流专项测试。
+
+### Verify / Review
+
+- Test first：专项测试首次因 `ai-workflow-engine` 模块不存在而按预期失败；没有删除、跳过或放宽断言。
+- 专项测试：PASS；8 个运行、8 次 Mock ModelGateway 调用、3 次采纳模拟写入；未确认、驳回、越权、顺序重复和并发重复造成的额外写入均为 0；真实外呼 0；Secret 不入 Checkpoint。
+- TypeScript 构建首次发现测试事件类型过宽并失败，修正为强类型事件列表后通过。
+- `npm run verify`：PASS；API 167，跨模块租户隔离 18，双端测试与构建通过。
+- `npm run test:e2e`：首次运行在 33/37 后由 Playwright 进程异常退出，未出现产品断言失败；清理约 571 MB 中断 Trace 后原命令重跑 PASS，37/37。
+- `npm run audit:dependencies`：一次请求发生 TLS 网络中断；同一锁文件重跑 PASS，0 vulnerabilities。
+- 代码暂存后仓库安全检查 PASS，129 个文件；闭环文档暂存后最终 PASS，130 个文件；`git diff --cached --check` PASS。
+- Review 确认：无真实模型/数据/CRM 写入，无新 API/数据库/前端变更；MemorySaver 不得用于正式环境；R-012/R-014 未关闭。
+
+### Record / Next
+
+- 实现 Commit：`356200a`。
+- 证据：`docs/engineering/evidence/L-0011-ai-workflow-engine.md`。
+- `REQ-GJ-AI-ORCH-001 / TASK-GJ-0102` 本地 DoD 完成；阶段 2 继续 `in_progress`，阶段 4/5 仍未开始功能交付。
+- 下一循环建议 L-0012：建立模型/来源凭证 `SecretVault` 边界与迁移策略，先缓解 R-012/R-013，再把 `AiWorkflowEngine` 接入真实线索评分预览/确认 API；不得在明文 Key 风险关闭前接真实凭证。

@@ -1,6 +1,6 @@
 # 测试策略与质量门禁
 
-更新时间：2026-07-13
+更新时间：2026-07-15
 
 ## 分层测试
 
@@ -25,7 +25,7 @@ npm run audit:dependencies
 - 仓库敏感文件检查；
 - 依赖版本、来源和完整性策略检查；
 - 后端路由模块独立集成测试；
-- 后端 self-test；
+- 后端 self-test；`AiWorkflowEngine` 暂停/恢复、确认、权限、幂等和审计专项测试；
 - 前端 self-test；
 - 后端安全测试；
 - 工作簿安全与 XLSX/XLS/CSV 兼容测试；
@@ -74,3 +74,15 @@ npm run audit:dependencies
 - OpenAPI 文档操作数必须与注册路由操作数一致；当前基线固定为 167，计划增删接口必须同步 ADR、测试和文档；
 - 每批迁移至少运行 `npm run test:routes`、`npm run test:security`、`npm run verify` 和 P0 E2E；
 - 禁止通过修改断言接受未登记的契约变化。
+
+## AI 工作流编排标准
+
+- LangGraph.js 只负责编排；专项测试必须证明模型调用全部经过 Mock `ModelGateway`，真实外呼为 0；
+- 未确认、驳回、读取越权、写入越权时领域写入必须为 0；
+- 顺序和并发重复确认最多执行一次稳定幂等 Effect；
+- 暂停运行必须能通过稳定 run/thread ID 恢复，并校验恢复用户和租户；
+- 模型输出必须在人工确认前通过严格 Schema；非法 JSON/结构不得进入确认或写入；
+- Checkpoint、公开 Snapshot、审计和错误不得包含 API Key；
+- 每个 workflow/permission/lead/model/proposal/approval/effect/failure 事件必须包含 Trace ID；
+- MemorySaver 只允许测试和本地技术验证；正式 MySQL 恢复必须另有迁移、事务、并发和崩溃恢复测试；
+- LangGraph、Checkpoint、Core 和 Zod 必须精确锁定版本与 SHA-512 完整性，High/Critical audit 为 0。

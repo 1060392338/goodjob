@@ -232,7 +232,7 @@
       "task": "TASK-GJ-0102",
       "title": "验证 LangGraph.js 编排边界与受控 AI 工作流协议",
       "phase": 2,
-      "status": "in_progress",
+      "status": "done",
       "priority": "P0",
       "acceptance": [
         "LangGraph.js 只负责编排，所有模型调用必须经过 ModelGateway",
@@ -260,7 +260,17 @@
         "不新增生产 API 或数据库迁移",
         "不接入钉钉、企微、飞书",
         "不声明阶段 4 或阶段 5 已完成"
-      ]
+      ],
+      "completedAt": "2026-07-15",
+      "verification": {
+        "code": "PASS: AiWorkflowEngine 通过 LangGraph.js 编排读取、Mock 评分、结构校验、暂停/恢复、采纳/驳回/重跑、权限复检、幂等模拟写入和审计",
+        "workflow": "PASS: 8 runs, 8 mock model calls, 3 approved simulated writes, duplicate/rejected/unauthorized writes 0, real outbound calls 0, secret in checkpoint false",
+        "regression": "PASS: verify; API 167; tenant isolation 18; Playwright 37/37; audit 0; final repository security 130 files",
+        "dependencies": "Pinned: @langchain/langgraph 1.4.8, checkpoint 1.1.3, @langchain/core 1.1.48, zod 3.25.76",
+        "evidence": [
+          "docs/engineering/evidence/L-0011-ai-workflow-engine.md"
+        ]
+      }
     },
     {
       "id": "REQ-GJ-LEAD-001",
