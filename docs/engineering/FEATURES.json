@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-07-14",
+  "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0006",
+  "currentIteration": "L-0007",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -90,10 +90,12 @@
       "evidence": [
         "docs/engineering/evidence/L-0004-route-modularization.md",
         "docs/engineering/evidence/L-0005-customer-modularization.md",
-        "docs/engineering/evidence/L-0006-lead-modularization.md"
+        "docs/engineering/evidence/L-0006-lead-modularization.md",
+        "docs/engineering/evidence/L-0007-lead-outreach-conversion.md"
       ],
       "design": [
-        "docs/engineering/adr/ADR-0005-route-modularization.md"
+        "docs/engineering/adr/ADR-0005-route-modularization.md",
+        "docs/engineering/adr/ADR-0006-lead-outreach-conversion-boundaries.md"
       ],
       "progress": {
         "completedSlices": [
@@ -102,41 +104,48 @@
           "共享 asyncRoute HTTP 边界",
           "独立路由集成测试门禁",
           "客户查询/创建/更新/批量删除/活动 5 个 API 与客户领域服务",
-          "线索查询/详情/创建/摄取/更新/垃圾箱/恢复/永久删除/活动 9 个 API、来源血缘与线索领域服务"
+          "线索查询/详情/创建/摄取/更新/垃圾箱/恢复/永久删除/活动 9 个 API、来源血缘与线索领域服务",
+          "线索社交触达、邮件发送、转化预览与转客户/商机 4 个 API，含邮件 Gateway、外联幂等和跨聚合回滚"
         ],
         "nextSlices": [
-          "线索社交触达、邮件发送、转化预览与转客户/商机 4 个高耦合 API",
-          "AI Gateway 与集成路由装配入口"
+          "AI Gateway 与 AI/集成路由装配入口",
+          "前端 prototype-api.ts 按领域拆分",
+          "Repository/Unit of Work 与 MySQL 增量持久化边界"
         ],
-        "verification": "PASS: system/auth/customer/lead route integration; source idempotency and tenant lineage; API operation baseline 167; npm run verify; Playwright 37/37",
-        "deliveryCommit": "3e5c5b3",
+        "verification": "PASS: system/auth/customer/lead/outreach/conversion route integration; email gateway failure injection and idempotency; conversion rollback and source lineage; API operation baseline 167; npm run verify; Playwright 37/37; audit high 0",
+        "deliveryCommit": "dde131a",
         "currentSlice": {
-          "loop": "L-0006",
-          "scope": "线索核心摄取与生命周期 9 个 API、来源血缘、幂等和线索领域服务",
-          "status": "completed",
-          "baselineCommit": "eb34489",
+          "loop": "L-0007",
+          "scope": "线索社交触达、邮件发送、转化预览与转客户/商机 4 个高耦合 API",
+          "status": "done",
+          "baselineCommit": "79007f7",
           "acceptance": [
-            "9 个核心线索 API 迁出 server.ts 且 API 操作总数保持 167",
-            "sales、manager、admin、super_admin 数据范围和跨团队 404 行为不变",
-            "来源幂等键 ownerId + sourceChannel + externalId、rawPayload 与 owner/team 血缘不变",
-            "阶段活动、垃圾箱、恢复、已转客户保护、永久清理和跟进状态推进不变",
-            "独立线索路由测试、self-test、security、build、E2E 全部通过"
+            "4 个高耦合线索 API 迁出 server.ts 且 API 操作总数保持 167",
+            "邮件通过可注入 Gateway 执行，Mock 覆盖失败、超时和无外呼权限路径",
+            "Idempotency-Key 防止邮件重复发送和社交触达重复活动，并拒绝键/载荷冲突",
+            "无权访问或已删除线索不得触达、发邮件、预览或转化",
+            "重复转化不重复创建客户/商机，持久化失败回滚跨聚合内存变更",
+            "来源事件继续保留，可由转化后的 lead → customer/deal 反查来源",
+            "独立路由测试、self-test、security、verify 与 E2E 全部通过"
           ],
-          "deferred": [
-            "POST /api/leads/:id/social-touch",
-            "POST /api/leads/:id/send-email",
-            "GET /api/leads/:id/conversion-preview",
-            "POST /api/leads/:id/convert"
+          "tests": [
+            "npm run test:routes",
+            "npm run test",
+            "npm run test:security",
+            "npm run verify",
+            "npm run test:e2e"
           ],
+          "design": "docs/engineering/adr/ADR-0006-lead-outreach-conversion-boundaries.md",
+          "codeCommit": "dde131a",
+          "completedAt": "2026-07-15",
           "verification": {
-            "routeTests": "PASS: core/customer/lead route integration; role scopes; source tenant filter; idempotency; lifecycle and cascade cleanup; persist count 9",
+            "routeTests": "PASS: core/customer/lead/outreach/conversion; duplicate side effects blocked; SMTP auth/timeout injected; conversion rollback verified",
             "apiContract": "PASS: registered/OpenAPI operations 167; cross-module tenant isolation 18",
-            "fullGate": "PASS: npm run test; npm run test:security; npm run verify",
+            "fullGate": "PASS: npm run test; npm run test:security; npm run verify; npm audit high 0",
             "e2e": "PASS: Playwright 37/37",
             "diff": "PASS: git diff --check"
           },
-          "deliveryCommit": "3e5c5b3",
-          "evidence": "docs/engineering/evidence/L-0006-lead-modularization.md"
+          "evidence": "docs/engineering/evidence/L-0007-lead-outreach-conversion.md"
         }
       }
     },

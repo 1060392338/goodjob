@@ -251,3 +251,47 @@
 - 证据：`docs/engineering/evidence/L-0006-lead-modularization.md`。
 - `REQ-GJ-ARCH-001` 保持 `in_progress`；不得因 9 个核心接口迁移完成而提前标记总体完成。
 - 下一循环 L-0007 处理社交触达、邮件发送、转化预览和转客户/商机 4 个高耦合接口，先冻结外部副作用和跨聚合事务测试，再实施迁移。
+
+## 2026-07-15 — Loop L-0007：线索外联、邮件与转化边界模块化
+
+### Orient / Select
+
+- 基线 Commit：`79007f7`；分支：`codex/phase-1-route-modularization`。
+- 继续 `REQ-GJ-ARCH-001 / TASK-GJ-0003`，风险对应 R-004/R-005，并新增 R-011 跟踪邮件结果不确定与 `pending` 运维处置。
+- 冻结 4 个 API：社交触达、邮件发送、转化预览、转客户/商机。
+- 明确 `/social-touch` 仅记录人工活动；真实平台外呼、AI Gateway 和协作平台凭证均不进入本循环。
+
+### Plan / Acceptance
+
+- 新增 `ADR-0006`，冻结邮件 Gateway、哈希化幂等键、`pending/succeeded/failed` 状态和转化跨聚合回滚规则。
+- 邮件副作用必须通过可注入 Gateway；测试使用 Mock，覆盖成功、认证失败、超时、重复键和最终持久化失败。
+- 转化测试覆盖可见客户匹配、新建/关联客户、可选商机、商机事件、重复转化、来源追溯与失败回滚。
+- 完整计划、验收、测试和回滚：`docs/engineering/evidence/L-0007-lead-outreach-conversion.md`。
+
+### Implement
+
+- 新增 `OutboundEmailGateway`，并将既有 SMTP 调用统一复用 Nodemailer Gateway。
+- 新增 `lead-outreach-service.ts`、`lead-conversion-service.ts` 和共享 `deal-service.ts`。
+- 新增 `lead-outreach-routes.ts`、`lead-conversion-routes.ts`，4 个 API 从 `server.ts` 迁出并显式装配。
+- 新增 `lead_outreach_requests` MySQL 表和 Store 集合，只保存键/载荷哈希及副作用状态，不保存邮件正文、原始键或 SMTP 凭证。
+- 新增两组专项路由测试并纳入 `test:routes` 与 `verify`。
+- 专项测试首次发现日期正则遗漏转义和商机事件快照无法回滚；保持断言不变修复实现。
+- `server.ts` 6526 → 6258 行，净减少 268 行；无新生产依赖。
+
+### Verify / Review
+
+- `npm run test:routes`：PASS；core/customer/lead/outreach/conversion 五组通过。
+- `npm run test --workspace backend`：PASS；既有外联和转化行为未回归。
+- `npm run test:security`：PASS；API 操作 167；跨模块租户隔离 18。
+- `npm run build --workspace backend`：PASS。
+- `npm run verify`：PASS；仓库安全检查 98 个已跟踪文件，依赖策略、工作簿安全和双端构建通过。
+- `npm run test:e2e`：PASS，Chromium 37/37。
+- `npm run audit:dependencies`：PASS，0 vulnerabilities。
+- `git diff --check`：PASS。
+
+### Record / Next
+
+- 代码 Commit：`dde131a`。
+- 证据：`docs/engineering/evidence/L-0007-lead-outreach-conversion.md`。
+- L-0007 切片完成；`REQ-GJ-ARCH-001` 与阶段 2 继续 `in_progress`。
+- 下一循环 L-0008 先盘点 AI 与集成路由，冻结 Model Gateway/Connector/Collaboration Adapter 装配边界并建立 Mock 契约；不得直接连接真实模型或钉钉、企微、飞书。
