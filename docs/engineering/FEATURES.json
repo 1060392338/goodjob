@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0010",
+  "currentIteration": "L-0011",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -226,6 +226,41 @@
         "failure injection"
       ],
       "evidence": []
+    },
+    {
+      "id": "REQ-GJ-AI-ORCH-001",
+      "task": "TASK-GJ-0102",
+      "title": "验证 LangGraph.js 编排边界与受控 AI 工作流协议",
+      "phase": 2,
+      "status": "in_progress",
+      "priority": "P0",
+      "acceptance": [
+        "LangGraph.js 只负责编排，所有模型调用必须经过 ModelGateway",
+        "线索评分在人工确认前、驳回后和越权时写入次数均为 0",
+        "暂停后的工作流可恢复，重复确认最多执行一次幂等写入",
+        "每个工作流步骤、模型调用、人工决定和工具执行均可通过 Trace ID 审计",
+        "Checkpoint 不持久化模型 API Key，MySQL 持久化策略与失败退出条件有 ADR",
+        "技术验证只使用 Mock 模型和模拟领域写入，真实外呼与真实 CRM 写入均为 0"
+      ],
+      "tests": [
+        "npm run test:workflow:ai --workspace backend",
+        "npm run verify",
+        "npm run test:e2e",
+        "npm run audit:dependencies"
+      ],
+      "evidence": [
+        "docs/engineering/evidence/L-0011-ai-workflow-engine.md"
+      ],
+      "dependencies": [
+        "REQ-GJ-ARCH-001",
+        "ADR-0007"
+      ],
+      "nonGoals": [
+        "不接真实模型、真实线索数据或真实 CRM 写入",
+        "不新增生产 API 或数据库迁移",
+        "不接入钉钉、企微、飞书",
+        "不声明阶段 4 或阶段 5 已完成"
+      ]
     },
     {
       "id": "REQ-GJ-LEAD-001",

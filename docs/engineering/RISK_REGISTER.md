@@ -15,9 +15,8 @@
 | R-009 | GitHub 远端、质量门禁与保护规则未完全闭环 | High | Mitigating | 已建立 `github` 远端并推送 master/开发分支；待完成 Actions 实跑、历史 Secret Scan、分支保护与部署凭证确认 | 阶段 0 |
 | R-010 | npm Registry 的 `xlsx@0.18.5` 存在 Prototype Pollution 与 ReDoS High 漏洞 | High | Closed | 已升级到 SheetJS 官方 `0.20.3`、锁定完整性、集中安全解析并增加恶意输入/兼容测试；依赖审计为 0 | 阶段 0 |
 | R-011 | SMTP 超时或发送成功后最终持久化失败会留下结果不确定的 `pending` 外联请求，人工使用新键仍可能造成重复邮件 | High | Open | 发送前持久化 pending；相同键返回 409 且不自动重发；保存外部消息 ID；后续增加运维查询、人工确认、受控重试和告警 | 阶段 2/7 |
-
 | R-012 | `ai_model_configs.api_key` 当前仍以明文 at-rest 保存，全量 Store 持久化和备份可能扩大凭证暴露面 | Critical | Open | 当前仅允许假密钥；真实模型 Key 投入前必须使用 KMS/信封加密或外部 Secret 引用，并补齐最小读取权限、轮换和吊销流程 | 阶段 2/4 |
-
 | R-013 | `lead_source_configs.api_key` 当前仍以明文 at-rest 保存，全量 Store 持久化和备份可能扩大第三方数据源凭证暴露面 | Critical | Open | 当前只允许测试假密钥；真实数据源 Key 投入前必须使用 KMS/信封加密或外部 Secret 引用，并补齐最小读取权限、轮换、吊销和供应商侧额度告警 | 阶段 2/3 |
+| R-014 | AI 工作流 Checkpoint、审批重放或幂等记录设计不当，可能持久化密钥、造成越权恢复或重复写入 | Critical | Mitigating | ADR-0010 要求 Checkpoint 禁止保存 API Key；恢复校验发起人；写入前权限复检；稳定幂等键；L-0011 仅使用 MemorySaver + Mock，正式 MySQL 表、事务、并发与崩溃恢复需独立 ADR/迁移演练 | 阶段 2/4/5 |
 
 任何 Critical 风险在关闭或正式签署接受前不得发布内部正式版。

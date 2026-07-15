@@ -428,3 +428,19 @@
 - 证据：`docs/engineering/evidence/L-0010-frontend-lead-source-center.md`。
 - L-0010 切片完成；阶段 2 继续 `in_progress`。
 - 下一循环建议 L-0011：LangGraph.js + `AiWorkflowEngine` 技术验证，只使用 Mock ModelGateway，验证暂停/恢复、人工确认、权限、幂等和审计；失败则不引入生产依赖。
+
+## 2026-07-15 — Loop L-0011：LangGraph.js 与 AiWorkflowEngine 技术验证
+
+### Orient / Select
+
+- 基线 Commit：`c2c1e52`；分支：`codex/phase-1-route-modularization`。
+- 登记 `REQ-GJ-AI-ORCH-001 / TASK-GJ-0102`，关联 `REQ-GJ-ARCH-001`、ADR-0007 与阶段 4/5 前置边界。
+- 只验证一条受控线索评分工作流：读取、Mock AI 评分、结构校验、人工确认、驳回/重跑、权限复检、幂等模拟写入和审计。
+- 排除真实模型、真实 CRM 数据、HTTP API、数据库迁移、协作平台和前端改造。
+
+### Plan / DoR
+
+- 新增 ADR-0010，冻结 LangGraph.js、ModelGateway、领域端口、Checkpoint、MySQL 正式化和失败退出边界。
+- 先创建专项测试并记录预期失败，再实现生产模块。
+- 验收必须证明未确认/驳回/越权写入为 0、重复确认只写一次、暂停可恢复、每步可审计、Secret 不入 checkpoint、真实外呼为 0。
+- 完整验证后再决定是否保留 LangGraph 生产依赖；审计或兼容性不通过则回退到 GoodJob 自有状态机。

@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "start:mysql": "cross-env CRM_STORE=mysql node dist/server.js",
     "provision:beta-admins": "tsx src/provision-beta-admins.ts",
-    "test": "cross-env NODE_ENV=test tsx src/self-test.ts",
+    "test": "npm run test:self && npm run test:workflow:ai",
     "test:security": "cross-env NODE_ENV=test JWT_SECRET=goodjob-security-test-secret-at-least-32-characters tsx src/security-test.ts",
     "test:routes": "npm run test:routes:core && npm run test:routes:customers && npm run test:routes:leads && npm run test:routes:lead-outreach && npm run test:routes:lead-conversion && npm run test:gateway:model && npm run test:routes:ai-config && npm run test:connector:lead-source && npm run test:routes:lead-source-config",
     "test:routes:core": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/routes-test.ts",
@@ -21,9 +21,13 @@
     "test:gateway:model": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/gateways/model-gateway-test.ts",
     "test:routes:ai-config": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/ai-config-routes-test.ts",
     "test:connector:lead-source": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/connectors/lead-source-connector-test.ts",
-    "test:routes:lead-source-config": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/lead-source-config-routes-test.ts"
+    "test:routes:lead-source-config": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/lead-source-config-routes-test.ts",
+    "test:self": "cross-env NODE_ENV=test tsx src/self-test.ts",
+    "test:workflow:ai": "cross-env NODE_ENV=test tsx src/ai/ai-workflow-engine-test.ts"
   },
   "dependencies": {
+    "@langchain/core": "1.1.48",
+    "@langchain/langgraph": "1.4.8",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "express-rate-limit": "^8.5.2",
@@ -35,7 +39,7 @@
     "swagger-ui-express": "^5.0.1",
     "twilio": "^6.0.2",
     "whatsapp-web.js": "^1.34.7",
-    "zod": "^3.23.8"
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
