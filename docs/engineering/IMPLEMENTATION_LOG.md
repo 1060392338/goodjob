@@ -295,3 +295,49 @@
 - 证据：`docs/engineering/evidence/L-0007-lead-outreach-conversion.md`。
 - L-0007 切片完成；`REQ-GJ-ARCH-001` 与阶段 2 继续 `in_progress`。
 - 下一循环 L-0008 先盘点 AI 与集成路由，冻结 Model Gateway/Connector/Collaboration Adapter 装配边界并建立 Mock 契约；不得直接连接真实模型或钉钉、企微、飞书。
+
+## 2026-07-15 — Loop L-0008：AI 配置路由与 ModelGateway 装配边界
+
+### Orient / Select
+
+- 基线 Commit：`6194cee`；分支：`codex/phase-1-route-modularization`。
+- 继续 `REQ-GJ-ARCH-001 / TASK-GJ-0003`，只为 `REQ-GJ-AI-001` 建立前置边界，不提前改变其 backlog 状态。
+- 冻结 AI 配置读取、保存、删除、连接测试 4 个 API；完整 AI 搜客、网站采集、协作平台、前端拆分和 Repository 均排除在本循环外。
+- 新增 R-012 跟踪模型 Key 明文 at-rest 风险；本循环只使用假密钥和 Mock/Stub。
+
+### Plan / Acceptance
+
+- 新增 `ADR-0007`，冻结 `ModelGateway`、Composition Root 装配、用户级配置隔离、SSRF 防护和公开错误脱敏。
+- Gateway 契约覆盖 OpenAI-compatible、Anthropic、Gemini，并分类未配置、认证、超时、限流、非法响应、供应商失败和安全拒绝。
+- 连接测试必须解析严格 JSON 且 `ok === true`；不得继续使用字符串包含判断。
+- 完整计划、验收、测试和回滚：`docs/engineering/evidence/L-0008-ai-config-model-gateway.md`。
+
+### Implement
+
+- 新增 `model-gateway.ts`，统一三协议传输、Trace ID、120 秒超时、SSRF 校验、响应信封解析、错误分类和 Key 脱敏。
+- 新增 `ai-config-service.ts`，集中配置选择、使用场景匹配、公开 DTO 和结构化连接测试。
+- 新增 `ai-config-routes.ts`，4 个 API 迁出 `server.ts` 并通过 `registerAiConfigRoutes` 显式装配。
+- 既有翻译、AI 搜客、官网 AI 解析改为复用同一个生产 Gateway；业务路由仍留待后续切片。
+- 新增 Gateway 契约测试和 AI 配置路由测试，并纳入 `test:routes` / `verify`。
+- 修复外租户配置 ID 可被同 ID 新建路径碰撞的问题：现在按不存在处理且不得覆盖。
+- `server.ts` 6258 → 5974 行，净减少 284 行；无数据库结构变化、无新生产依赖。
+
+### Verify / Review
+
+- `npm run test:gateway:model --workspace backend`：PASS；三协议、六类失败、真实外呼 0、密钥脱敏通过。
+- `npm run test:routes:ai-config --workspace backend`：PASS；4 路由、租户隔离、掩码保留、失败状态持久化通过。
+- `npm run test:routes`：PASS；七组路由/Gateway 门禁通过。
+- `npm run test --workspace backend`：PASS。
+- `npm run test:security`：PASS；API 操作 167；跨模块租户隔离 18。
+- `npm run build --workspace backend`：PASS。
+- `npm run verify`：PASS；双端测试、安全、工作簿和构建通过。
+- `npm run test:e2e`：PASS，Chromium 37/37。
+- `npm run audit:dependencies`：首次 npm Registry TLS 失败；使用本机代理重试 PASS，0 vulnerabilities。
+- 暂存新文件后 `npm run test:repo-security`：PASS，114 个文件；`git diff --check`：PASS。
+
+### Record / Next
+
+- 代码 Commit：`9160a90`。
+- 证据：`docs/engineering/evidence/L-0008-ai-config-model-gateway.md`。
+- L-0008 切片完成；`REQ-GJ-ARCH-001` 与阶段 2 继续 `in_progress`，`REQ-GJ-AI-001` 继续 backlog。
+- 下一循环 L-0009 建议处理线索来源配置 4 个 API 与 `LeadSourceConnector` 装配边界，先建立 Mock/契约，再迁移；不得混入真实供应商或协作平台凭证。

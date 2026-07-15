@@ -6,64 +6,60 @@
 
 - 仓库：`C:\Users\Administrator\Documents\Codex\2026-07-13\hi\GoodJob`
 - 分支：`codex/phase-1-route-modularization`
-- 最近完成循环：`L-0007`
+- 最近完成循环：`L-0008`
 - 需求/任务：`REQ-GJ-ARCH-001 / TASK-GJ-0003`
-- 基线 Commit：`79007f7`
-- 代码交付 Commit：`dde131a`
-- 证据：`docs/engineering/evidence/L-0007-lead-outreach-conversion.md`
-- 总体状态：L-0007 已完成本地 DoD；阶段 2 与 `REQ-GJ-ARCH-001` 继续 `in_progress`
+- 基线 Commit：`6194cee`
+- 代码交付 Commit：`9160a90`
+- 证据：`docs/engineering/evidence/L-0008-ai-config-model-gateway.md`
+- 总体状态：L-0008 已完成本地 DoD；阶段 2 与 `REQ-GJ-ARCH-001` 继续 `in_progress`；`REQ-GJ-AI-001` 仍为 backlog
 
-## L-0007 已完成内容
+## L-0008 已完成内容
 
-- 4 个高耦合线索 API 已迁出 `server.ts`：
-  - `POST /api/leads/:id/social-touch`
-  - `POST /api/leads/:id/send-email`
-  - `GET /api/leads/:id/conversion-preview`
-  - `POST /api/leads/:id/convert`
-- 新增可注入 `OutboundEmailGateway`，既有 SMTP 路径统一复用 Nodemailer 实现，专项测试使用 Mock。
-- 新增 `lead_outreach_requests` / `leadOutreachRequests`，使用哈希化 `Idempotency-Key`、载荷哈希和 `pending/succeeded/failed` 状态。
-- 邮件认证失败、超时、成功重复、键/载荷冲突和最终持久化失败均有专项测试。
-- 邮件外部结果不确定时保持 `pending`，相同键返回 409，不自动重发。
-- 新增转化服务，协调线索、客户、商机、商机事件和线索活动；持久化失败完整回滚。
-- 重复转化不重复创建客户、商机、事件或活动；来源事件继续保留。
-- 抽取共享 `createDealEvent` 服务。
-- `server.ts` 6526 → 6258 行，净减少 268 行。
-- 无新生产依赖；新增 MySQL 兼容表属于追加式 Schema 变化。
+- AI 配置读取、保存、删除、连接测试 4 个 API 已迁出 `server.ts`。
+- 新增可注入 `ModelGateway`，统一 OpenAI-compatible、Anthropic、Gemini。
+- Gateway 提供 Trace ID、超时、SSRF 地址检查、错误分类、响应信封校验和 Key 脱敏。
+- 翻译、AI 搜客、官网 AI 解析的底层调用已统一经过生产 Gateway；这些业务路由尚未迁移。
+- 配置按 `ownerId` 隔离；外租户 ID 不可读取、覆盖、测试或删除。
+- 连接测试必须返回严格 `{ "ok": true }`，非法结构化内容判定失败。
+- 新增两组测试：
+  - `backend/src/gateways/model-gateway-test.ts`
+  - `backend/src/routes/ai-config-routes-test.ts`
+- `server.ts` 6258 → 5974 行，净减少 284 行。
+- 无数据库结构变化，无新生产依赖，无真实模型外呼或真实密钥。
 
-## 测试驱动发现
+## 不得隐式改变的语义
 
-专项测试首次运行发现并锁定两处问题：
+- 所有模型传输必须通过 `ModelGateway`，业务代码不得重新直接调用厂商 SDK/HTTP。
+- 私网/本机模型地址默认禁止；只有显式 `ALLOW_PRIVATE_AI_ENDPOINTS=true` 可放行。
+- 原始 API Key 不得出现在 HTTP 响应、日志或错误；Gemini 查询参数也必须脱敏。
+- AI 配置当前是用户私有，不是团队共享；如需团队共享必须先新增 ADR 和权限矩阵。
+- 完整 AI 功能尚未开始：Prompt/Schema 版本、用量、自动重试、审计和金标评测仍属阶段 4。
+- 真实模型 Key 投入前必须处理 R-012 的 at-rest 明文风险。
+- 真实社交/协作平台发送必须走阶段 6 `CollaborationAdapter`，不得从 AI 或现有 `/social-touch` 绕过。
 
-1. 转化日期正则遗漏转义，导致已有跟进日期未被复用；
-2. 商机事件数组原地 `unshift` 使失败回滚快照无效。
+## L-0008 验证
 
-两处均通过修复实现解决，没有放宽断言、删除覆盖或跳过测试。
+```text
+npm run test:gateway:model --workspace backend  PASS
+npm run test:routes:ai-config --workspace backend PASS
+npm run test:routes                          PASS
+npm run test --workspace backend             PASS
+npm run test:security                        PASS，API 167，tenant isolation 18
+npm run build --workspace backend            PASS
+npm run verify                               PASS
+npm run test:e2e                             PASS，37/37
+npm run audit:dependencies                   PASS，0 vulnerabilities
+npm run test:repo-security（暂存新文件后）    PASS，114 files
+git diff --check                             PASS
+```
 
-## L-0007 验证
-
-- `npm run test:routes`：PASS；core/customer/lead/outreach/conversion 五组通过。
-- `npm run test --workspace backend`：PASS。
-- `npm run test:security`：PASS；API 操作 167；跨模块租户隔离 18。
-- `npm run build --workspace backend`：PASS。
-- `npm run verify`：PASS；仓库安全检查 98 个已跟踪文件。
-- `npm run test:e2e`：PASS，Chromium 37/37。
-- `npm run audit:dependencies`：PASS，0 vulnerabilities。
-- `git diff --check`：PASS。
-
-## 关键语义，不得在后续无 ADR 改动
-
-- `/social-touch` 仅表示人工触达记录，不代表真实 WhatsApp、微信、LinkedIn 或电话平台已发送。
-- 邮件先持久化 `pending` 再调用 Gateway；结果不确定时不得自动重发。
-- 原始幂等键、邮件正文和 SMTP 凭证不得写入外联幂等记录。
-- 真实社交平台发送必须走阶段 6 Collaboration Adapter。
-- 转化来源通过 `lead → leadSourceEvents` 反查，不复制或删除来源事件。
-- Store 进程内回滚不能替代数据库细粒度事务；R-005 继续 Open。
+依赖审计首次因 npm Registry TLS 中断失败，使用本机代理重试后通过；不得把首次失败从证据中删除。
 
 ## GitHub 交付规则
 
-- 唯一后续交付远端：`github https://github.com/1060392338/goodjob.git`。
-- 不操作、不推送 Gitee `origin`。
-- 推送使用本机代理：
+- GitHub 是唯一交付远端：`https://github.com/1060392338/goodjob.git`。
+- 禁止推送 Gitee `origin`。
+- 当前分支推送命令：
 
 ```powershell
 git -c http.proxy=http://127.0.0.1:7897 `
@@ -71,24 +67,28 @@ git -c http.proxy=http://127.0.0.1:7897 `
     push github codex/phase-1-route-modularization
 ```
 
-- 推送后使用 `git ls-remote` 校验本地 HEAD 与 GitHub 分支 HEAD 一致。
-- GitHub Actions、历史 Secret Scan、分支保护、必需检查和部署凭证轮换仍未闭环，不得声称已完成。
-
 ## 下一开发循环
 
-建议启动 **L-0008：AI 与集成装配边界盘点和首个可测试切片**，继续阶段 2，而不是提前进入 AI 功能实现：
+建议启动 **L-0009：线索来源配置与 LeadSourceConnector 装配边界**，继续阶段 2：
 
-1. 盘点 `server.ts` 中 AI 配置、模型调用、获客 Connector、WhatsApp/企微及其他集成路由和直接依赖；
-2. 冻结首个边界清晰的路由切片、URL、权限、状态码、响应、外部副作用和失败语义；
-3. 根据 ADR-0002/0003/0005 决定是否新增 ADR-0007，明确 Model Gateway、Connector、Collaboration Adapter 与 Composition Root；
-4. 先建立 Mock 契约、超时/认证/限流/未配置失败注入和租户隔离测试；
-5. 只迁移一个满足 DoR 的切片，保持 API 167、audit 0、`verify`、security 和 E2E 37/37；
-6. 不接入真实 OpenAI 密钥，不接入真实钉钉、企微、飞书凭证，不顺手扩展前端拆分或 MySQL Repository。
+1. Orient：阅读 `ADR-0003`、`ADR-0005`、`ADR-0007`、本交接、风险 R-004/R-005/R-006/R-012。
+2. Select：只冻结以下 4 个现有 API，先确认实际代码行和 OpenAPI 契约：
+   - `GET /api/lead-finder/providers`
+   - `POST /api/lead-finder/source-config`
+   - `POST /api/lead-finder/source-config/test`
+   - `DELETE /api/lead-finder/source-config/:provider`
+3. Plan：定义 `LeadSourceConnector` 与连接器错误分类；明确配置归属、密钥脱敏、SSRF、限流、分页/检查点和禁止未授权外呼。
+4. Test first：先建 Mock/契约和失败注入，再迁移路由；测试不得连接真实第三方数据源。
+5. Scope control：不同时迁移完整搜索、网站采集、AI 评分、前端拆分或 Collaboration Adapter。
+6. Gate：继续保持 API 167、tenant isolation 18+、audit high 0、`verify` 和 E2E 37/37。
 
 ## 持续风险与阻塞
 
-- R-001/R-009：GitHub 历史扫描、Actions、分支保护和部署凭证轮换未完成；
-- R-005：MySQL Store 仍为全量快照持久化；
-- R-008：前端主包和 `prototype-api.ts` 仍偏大；
-- R-011：`pending` 邮件缺少运维查询、人工确认、告警和受控重试界面；
-- 第三方线索厂商未指定；钉钉、企微、飞书真实企业凭证未提供，但不阻塞契约与 Mock 开发。
+- R-005：MySQL Store 仍是全量持久化，Repository/Unit of Work 未完成。
+- R-006：AI/网页采集仍需来源白名单、内容隔离、Prompt 注入防护、审计和人工确认。
+- R-008：前端主包约 1.394 MB。
+- R-009：GitHub Actions、历史 Secret Scan、分支保护和部署凭证轮换未闭环。
+- R-011：`pending` 邮件缺少运维处置界面。
+- R-012：模型 API Key 仍明文 at-rest；当前不得使用正式生产 Key。
+- GitHub 仓库 Public/Private 决策仍需项目负责人确认。
+- 第三方线索厂商和真实钉钉、企微、飞书企业凭证均未指定。

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0007",
+  "currentIteration": "L-0008",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -91,11 +91,13 @@
         "docs/engineering/evidence/L-0004-route-modularization.md",
         "docs/engineering/evidence/L-0005-customer-modularization.md",
         "docs/engineering/evidence/L-0006-lead-modularization.md",
-        "docs/engineering/evidence/L-0007-lead-outreach-conversion.md"
+        "docs/engineering/evidence/L-0007-lead-outreach-conversion.md",
+        "docs/engineering/evidence/L-0008-ai-config-model-gateway.md"
       ],
       "design": [
         "docs/engineering/adr/ADR-0005-route-modularization.md",
-        "docs/engineering/adr/ADR-0006-lead-outreach-conversion-boundaries.md"
+        "docs/engineering/adr/ADR-0006-lead-outreach-conversion-boundaries.md",
+        "docs/engineering/adr/ADR-0007-ai-config-model-gateway-boundary.md"
       ],
       "progress": {
         "completedSlices": [
@@ -105,47 +107,51 @@
           "独立路由集成测试门禁",
           "客户查询/创建/更新/批量删除/活动 5 个 API 与客户领域服务",
           "线索查询/详情/创建/摄取/更新/垃圾箱/恢复/永久删除/活动 9 个 API、来源血缘与线索领域服务",
-          "线索社交触达、邮件发送、转化预览与转客户/商机 4 个 API，含邮件 Gateway、外联幂等和跨聚合回滚"
+          "线索社交触达、邮件发送、转化预览与转客户/商机 4 个 API，含邮件 Gateway、外联幂等和跨聚合回滚",
+          "AI 配置读取/保存/删除/连接测试 4 个 API、统一 ModelGateway、租户隔离、SSRF 防护和密钥脱敏"
         ],
         "nextSlices": [
-          "AI Gateway 与 AI/集成路由装配入口",
+          "线索来源配置与 LeadSourceConnector 装配边界",
           "前端 prototype-api.ts 按领域拆分",
           "Repository/Unit of Work 与 MySQL 增量持久化边界"
         ],
-        "verification": "PASS: system/auth/customer/lead/outreach/conversion route integration; email gateway failure injection and idempotency; conversion rollback and source lineage; API operation baseline 167; npm run verify; Playwright 37/37; audit high 0",
-        "deliveryCommit": "dde131a",
+        "verification": "PASS: system/auth/customer/lead/outreach/conversion/AI config route integration; ModelGateway 3-protocol contract and failure injection; API operation baseline 167; tenant isolation 18; npm run verify; Playwright 37/37; audit high 0",
+        "deliveryCommit": "9160a90",
         "currentSlice": {
-          "loop": "L-0007",
-          "scope": "线索社交触达、邮件发送、转化预览与转客户/商机 4 个高耦合 API",
+          "loop": "L-0008",
+          "scope": "AI 配置 4 个 API 与 ModelGateway 传输和装配边界",
           "status": "done",
-          "baselineCommit": "79007f7",
+          "baselineCommit": "6194cee",
           "acceptance": [
-            "4 个高耦合线索 API 迁出 server.ts 且 API 操作总数保持 167",
-            "邮件通过可注入 Gateway 执行，Mock 覆盖失败、超时和无外呼权限路径",
-            "Idempotency-Key 防止邮件重复发送和社交触达重复活动，并拒绝键/载荷冲突",
-            "无权访问或已删除线索不得触达、发邮件、预览或转化",
-            "重复转化不重复创建客户/商机，持久化失败回滚跨聚合内存变更",
-            "来源事件继续保留，可由转化后的 lead → customer/deal 反查来源",
-            "独立路由测试、self-test、security、verify 与 E2E 全部通过"
+            "4 个 AI 配置 API 迁出 server.ts 且 API 操作总数保持 167",
+            "OpenAI-compatible、Anthropic、Gemini 统一通过可注入 ModelGateway 调用",
+            "未配置、缺少 Key、认证失败、超时、限流、非法响应和 SSRF 均有失败注入覆盖",
+            "配置读取、更新、测试和删除保持用户级租户隔离，外租户 ID 冲突不得覆盖",
+            "API Key 只返回尾四位掩码，公开错误不得泄露凭证或认证头",
+            "专项 Gateway/路由测试、self-test、security、verify、audit 与 E2E 全部通过"
           ],
           "tests": [
+            "npm run test:gateway:model --workspace backend",
+            "npm run test:routes:ai-config --workspace backend",
             "npm run test:routes",
             "npm run test",
             "npm run test:security",
             "npm run verify",
-            "npm run test:e2e"
+            "npm run test:e2e",
+            "npm run audit:dependencies"
           ],
-          "design": "docs/engineering/adr/ADR-0006-lead-outreach-conversion-boundaries.md",
-          "codeCommit": "dde131a",
+          "design": "docs/engineering/adr/ADR-0007-ai-config-model-gateway-boundary.md",
+          "codeCommit": "9160a90",
           "completedAt": "2026-07-15",
           "verification": {
-            "routeTests": "PASS: core/customer/lead/outreach/conversion; duplicate side effects blocked; SMTP auth/timeout injected; conversion rollback verified",
+            "gatewayContract": "PASS: 3 protocols; unconfigured/auth/timeout/rate-limit/invalid/security failures; outbound 0; secret redaction",
+            "routeTests": "PASS: 4 AI config APIs; tenant isolation; masked-key preservation; failure status persistence",
             "apiContract": "PASS: registered/OpenAPI operations 167; cross-module tenant isolation 18",
             "fullGate": "PASS: npm run test; npm run test:security; npm run verify; npm audit high 0",
             "e2e": "PASS: Playwright 37/37",
             "diff": "PASS: git diff --check"
           },
-          "evidence": "docs/engineering/evidence/L-0007-lead-outreach-conversion.md"
+          "evidence": "docs/engineering/evidence/L-0008-ai-config-model-gateway.md"
         }
       }
     },
