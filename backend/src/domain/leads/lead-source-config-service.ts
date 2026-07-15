@@ -3,6 +3,7 @@ import type { CrmStore } from "../../store.js";
 import { getStore } from "../../store.js";
 import type { LeadSourceConfig, SessionUser } from "../../types.js";
 import { getAiConfig } from "../ai/ai-config-service.js";
+import { maskSecret } from "../../security/secret-vault.js";
 
 export function getLeadSourceConfig(user: SessionUser, provider: string, store: CrmStore = getStore()) {
   return store.leadSourceConfigs.find((item) => item.provider === provider && item.ownerId === user.id);
@@ -13,7 +14,7 @@ export function publicLeadSourceConfig(config: LeadSourceConfig) {
     id: config.id,
     provider: config.provider,
     scope: config.scope,
-    apiKey: config.apiKey ? `****${config.apiKey.slice(-4)}` : "",
+    apiKey: maskSecret(config.apiKey),
     hasApiKey: Boolean(config.apiKey),
     baseUrl: config.baseUrl || "",
     enabled: config.enabled,

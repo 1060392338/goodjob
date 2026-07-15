@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "start:mysql": "cross-env CRM_STORE=mysql node dist/server.js",
     "provision:beta-admins": "tsx src/provision-beta-admins.ts",
-    "test": "npm run test:self && npm run test:workflow:ai",
+    "test": "npm run test:self && npm run test:workflow:ai && npm run test:vault",
     "test:security": "cross-env NODE_ENV=test JWT_SECRET=goodjob-security-test-secret-at-least-32-characters tsx src/security-test.ts",
     "test:routes": "npm run test:routes:core && npm run test:routes:customers && npm run test:routes:leads && npm run test:routes:lead-outreach && npm run test:routes:lead-conversion && npm run test:gateway:model && npm run test:routes:ai-config && npm run test:connector:lead-source && npm run test:routes:lead-source-config",
     "test:routes:core": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/routes-test.ts",
@@ -23,7 +23,8 @@
     "test:connector:lead-source": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/connectors/lead-source-connector-test.ts",
     "test:routes:lead-source-config": "cross-env NODE_ENV=test JWT_SECRET=goodjob-route-test-secret-at-least-32-characters tsx src/routes/lead-source-config-routes-test.ts",
     "test:self": "cross-env NODE_ENV=test tsx src/self-test.ts",
-    "test:workflow:ai": "cross-env NODE_ENV=test tsx src/ai/ai-workflow-engine-test.ts"
+    "test:workflow:ai": "cross-env NODE_ENV=test tsx src/ai/ai-workflow-engine-test.ts",
+    "test:vault": "cross-env NODE_ENV=test tsx src/security/secret-vault-test.ts"
   },
   "dependencies": {
     "@langchain/core": "1.1.48",

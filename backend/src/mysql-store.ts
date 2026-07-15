@@ -4,10 +4,17 @@ import { aiModelConfigs, caseStudies, commissionCalculations, commissionExports,
 import type { CrmStore } from "./store.js";
 import type { WhatsAppBinding, WhatsAppMessage } from "./types.js";
 import type { AiModelConfig, CaseStudy, CommissionCalculation, CommissionExport, CommissionItem, CommissionProduct, CommissionRule, Competitor, Customer, CustomerActivity, Deal, DealEvent, Exam, ExamAttempt, ExamQuestion, ExamQuestionLink, ImportExportJob, KnowledgeAsset, Lead, LeadActivity, LeadOutreachRequest, LeadSourceConfig, LeadSourceEvent, Memo, MonthlySalesRecord, OcrJob, PlanTask, PlanTemplate, ProblemItem, Reminder, SalesRecordAudit, Todo, TradeDocument, User, WecomMessage, WebsiteOpportunity } from "./types.js";
+import { credentialSecretContext, decodeCredentialSecret, protectCredentialRecords } from "./security/credential-secret-storage.js";
+import { SecretVaultError, secretVaultFromEnvironment, type SecretVault } from "./security/secret-vault.js";
 
 const defaultUrl = "mysql://goodjob:change_me@127.0.0.1:3306/goodjob_crm";
 
-export async function createMysqlStore(): Promise<CrmStore> {
+export interface MysqlStoreOptions {
+  secretVault?: SecretVault;
+}
+
+export async function createMysqlStore(options: MysqlStoreOptions = {}): Promise<CrmStore> {
+  const secretVault = options.secretVault || secretVaultFromEnvironment();
   const configuredUrl = process.env.DATABASE_URL || process.env.MYSQL_URL;
   if (process.env.NODE_ENV === "production" && !configuredUrl) {
     throw new Error("生产环境必须配置 DATABASE_URL 或 MYSQL_URL");
@@ -15,6 +22,7 @@ export async function createMysqlStore(): Promise<CrmStore> {
   const databaseUrl = configuredUrl || defaultUrl;
   const pool = mysql.createPool({ uri: databaseUrl, connectionLimit: 4, namedPlaceholders: true });
   await ensureSchema(pool);
+  await migrateCredentialSecrets(pool, secretVault);
 
   const store: CrmStore = {
     mode: "mysql",
@@ -39,8 +47,8 @@ export async function createMysqlStore(): Promise<CrmStore> {
 	    wecomMessages: await loadWecomMessages(pool),
 		    ocrJobs: await loadOcrJobs(pool),
 		    websiteOpportunities: await loadWebsiteOpportunities(pool),
-		    aiModelConfigs: await loadAiModelConfigs(pool),
-		    leadSourceConfigs: await loadLeadSourceConfigs(pool),
+		    aiModelConfigs: await loadAiModelConfigs(pool, secretVault),
+		    leadSourceConfigs: await loadLeadSourceConfigs(pool, secretVault),
 		    planTasks: await loadPlanTasks(pool),
 		    planTemplates: await loadPlanTemplates(pool),
 		    problems: await loadProblems(pool),
@@ -57,7 +65,7 @@ export async function createMysqlStore(): Promise<CrmStore> {
 		    whatsappBindings: await loadWhatsAppBindings(pool),
 		    whatsappMessages: await loadWhatsAppMessages(pool),
 			    async persist() {
-      await persistAll(pool, store);
+      await persistAll(pool, store, secretVault);
     }
   };
 
@@ -704,6 +712,19 @@ async function ensureSchema(pool: mysql.Pool) {
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_lead_source_owner(owner_id)
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS credential_secret_migrations (
+    migration_id VARCHAR(100) PRIMARY KEY,
+    status VARCHAR(20) NOT NULL,
+    checkpoint_table VARCHAR(64) DEFAULT '',
+    checkpoint_id VARCHAR(64) DEFAULT '',
+    migrated_count INT DEFAULT 0,
+    rotated_count INT DEFAULT 0,
+    validated_count INT DEFAULT 0,
+    failure_code VARCHAR(80) DEFAULT '',
+    started_at DATETIME NULL,
+    completed_at DATETIME NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`);
   await pool.query(`CREATE TABLE IF NOT EXISTS import_export_jobs (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
@@ -1005,8 +1026,8 @@ async function ensureSchema(pool: mysql.Pool) {
   )`);
 }
 
-async function rows<T>(pool: mysql.Pool, sql: string): Promise<T[]> {
-  const [result] = await pool.query(sql);
+async function rows<T>(pool: mysql.Pool, sql: string, values: unknown[] = []): Promise<T[]> {
+  const [result] = await pool.query(sql, values);
   return result as T[];
 }
 
@@ -1384,46 +1405,193 @@ async function loadWebsiteOpportunities(pool: mysql.Pool): Promise<WebsiteOpport
   }));
 }
 
-async function loadAiModelConfigs(pool: mysql.Pool): Promise<AiModelConfig[]> {
-  return (await rows<Record<string, any>>(pool, "SELECT * FROM ai_model_configs ORDER BY updated_at DESC")).map((row) => ({
-    id: row.id,
-    provider: row.provider || "openai",
-    protocol: row.protocol || (row.provider === "anthropic" ? "anthropic" : row.provider === "gemini" ? "gemini" : "openai-compatible"),
-    name: row.name,
-    baseUrl: row.base_url,
-    model: row.model,
-    apiKey: row.api_key || "",
-    enabled: Boolean(row.enabled),
-    temperature: Number(row.temperature ?? 0.1),
-    useLeadFinder: row.use_lead_finder === undefined || row.use_lead_finder === null ? true : Boolean(row.use_lead_finder),
-    useWebsiteParse: row.use_website_parse === undefined || row.use_website_parse === null ? true : Boolean(row.use_website_parse),
-    useScoring: row.use_scoring === undefined || row.use_scoring === null ? true : Boolean(row.use_scoring),
-    useEmailDraft: row.use_email_draft === undefined || row.use_email_draft === null ? true : Boolean(row.use_email_draft),
-    useExam: Boolean(row.use_exam),
-    lastTestAt: row.last_test_at instanceof Date ? row.last_test_at.toISOString() : row.last_test_at || undefined,
-    lastTestStatus: row.last_test_status || "untested",
-    lastTestMessage: row.last_test_message || "",
-    ownerId: row.owner_id,
-    teamId: row.team_id,
-    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at
+const CREDENTIAL_SECRET_MIGRATION_ID = "model-and-lead-source-api-keys-v1";
+const CREDENTIAL_SECRET_BATCH_SIZE = 100;
+
+type CredentialMigrationTable = "ai_model_configs" | "lead_source_configs";
+
+async function migrateCredentialSecrets(pool: mysql.Pool, vault: SecretVault) {
+  const lockConnection = await pool.getConnection();
+  try {
+    const [lockRows] = await lockConnection.query<mysql.RowDataPacket[]>(
+      "SELECT GET_LOCK(?, 30) AS acquired",
+      ["goodjob:credential-secret-migration"]
+    );
+    if (Number(lockRows[0]?.acquired) !== 1) {
+      throw new Error("Credential secret migration lock timeout; startup refused");
+    }
+    await runCredentialSecretMigration(pool, vault);
+  } finally {
+    try {
+      await lockConnection.query("SELECT RELEASE_LOCK(?)", ["goodjob:credential-secret-migration"]);
+    } finally {
+      lockConnection.release();
+    }
+  }
+}
+
+async function runCredentialSecretMigration(pool: mysql.Pool, vault: SecretVault) {
+  const migrationRows = await rows<Record<string, any>>(
+    pool,
+    "SELECT * FROM credential_secret_migrations WHERE migration_id = ?",
+    [CREDENTIAL_SECRET_MIGRATION_ID]
+  );
+  const previous = migrationRows[0];
+  const canResume = previous && ["running", "failed"].includes(previous.status)
+    && ["ai_model_configs", "lead_source_configs"].includes(previous.checkpoint_table);
+  let migratedCount = canResume ? Number(previous.migrated_count || 0) : 0;
+  let rotatedCount = canResume ? Number(previous.rotated_count || 0) : 0;
+  let validatedCount = canResume ? Number(previous.validated_count || 0) : 0;
+  const resumeTable = canResume ? previous.checkpoint_table as CredentialMigrationTable : "ai_model_configs";
+  const resumeId = canResume ? String(previous.checkpoint_id || "") : "";
+
+  await pool.query(
+    `INSERT INTO credential_secret_migrations
+      (migration_id,status,checkpoint_table,checkpoint_id,migrated_count,rotated_count,validated_count,failure_code,started_at,completed_at)
+     VALUES (?, 'running', ?, ?, ?, ?, ?, '', NOW(), NULL)
+     ON DUPLICATE KEY UPDATE status='running', checkpoint_table=VALUES(checkpoint_table), checkpoint_id=VALUES(checkpoint_id),
+       migrated_count=VALUES(migrated_count), rotated_count=VALUES(rotated_count), validated_count=VALUES(validated_count),
+       failure_code='', started_at=IF(completed_at IS NULL, started_at, NOW()), completed_at=NULL`,
+    [CREDENTIAL_SECRET_MIGRATION_ID, resumeTable, resumeId, migratedCount, rotatedCount, validatedCount]
+  );
+
+  try {
+    const tables = ["ai_model_configs", "lead_source_configs"] as const;
+    const startIndex = tables.indexOf(resumeTable);
+    for (let tableIndex = startIndex; tableIndex < tables.length; tableIndex += 1) {
+      const table = tables[tableIndex];
+      let checkpointId = table === resumeTable ? resumeId : "";
+      while (true) {
+        const configRows = await rows<Record<string, any>>(
+          pool,
+          `SELECT id, api_key, owner_id, team_id FROM ${table} WHERE id > ? ORDER BY id LIMIT ${CREDENTIAL_SECRET_BATCH_SIZE}`,
+          [checkpointId]
+        );
+        if (!configRows.length) break;
+        const connection = await pool.getConnection();
+        try {
+          await connection.beginTransaction();
+          for (const row of configRows) {
+            const kind = table === "ai_model_configs" ? "ai-model" : "lead-source";
+            const decoded = await decodeCredentialSecret(
+              row.api_key || "",
+              credentialSecretContext(kind, row.id, row.owner_id, row.team_id),
+              vault
+            );
+            validatedCount += 1;
+            if (decoded.action !== "none") {
+              const [updateResult] = await connection.query<mysql.ResultSetHeader>(
+                `UPDATE ${table} SET api_key = ? WHERE id = ? AND api_key <=> ?`,
+                [decoded.protectedValue, row.id, row.api_key]
+              );
+              if (updateResult.affectedRows !== 1) {
+                throw new Error("Credential changed concurrently during migration; startup refused");
+              }
+              if (decoded.action === "migrate") migratedCount += 1;
+              if (decoded.action === "rotate") rotatedCount += 1;
+            }
+            checkpointId = row.id;
+          }
+          await connection.query(
+            `UPDATE credential_secret_migrations
+             SET checkpoint_table=?, checkpoint_id=?, migrated_count=?, rotated_count=?, validated_count=?, updated_at=NOW()
+             WHERE migration_id=?`,
+            [table, checkpointId, migratedCount, rotatedCount, validatedCount, CREDENTIAL_SECRET_MIGRATION_ID]
+          );
+          await connection.commit();
+        } catch (error) {
+          await connection.rollback();
+          throw error;
+        } finally {
+          connection.release();
+        }
+      }
+      if (tableIndex + 1 < tables.length) {
+        await pool.query(
+          `UPDATE credential_secret_migrations SET checkpoint_table=?, checkpoint_id='', updated_at=NOW() WHERE migration_id=?`,
+          [tables[tableIndex + 1], CREDENTIAL_SECRET_MIGRATION_ID]
+        );
+      }
+    }
+    await pool.query(
+      `UPDATE credential_secret_migrations
+       SET status='completed', checkpoint_table='', checkpoint_id='', migrated_count=?, rotated_count=?,
+         validated_count=?, failure_code='', completed_at=NOW(), updated_at=NOW()
+       WHERE migration_id=?`,
+      [migratedCount, rotatedCount, validatedCount, CREDENTIAL_SECRET_MIGRATION_ID]
+    );
+  } catch (error) {
+    const failureCode = error instanceof SecretVaultError ? error.code : "MIGRATION_FAILED";
+    await pool.query(
+      `UPDATE credential_secret_migrations SET status='failed', failure_code=?, updated_at=NOW() WHERE migration_id=?`,
+      [failureCode, CREDENTIAL_SECRET_MIGRATION_ID]
+    );
+    throw error;
+  }
+}
+
+async function loadAiModelConfigs(pool: mysql.Pool, vault: SecretVault): Promise<AiModelConfig[]> {
+  const configRows = await rows<Record<string, any>>(pool, "SELECT * FROM ai_model_configs ORDER BY updated_at DESC");
+  return Promise.all(configRows.map(async (row) => {
+    const decoded = await decodeCredentialSecret(
+      row.api_key || "",
+      credentialSecretContext("ai-model", row.id, row.owner_id, row.team_id),
+      vault
+    );
+    if (decoded.action !== "none") {
+      throw new SecretVaultError("INVALID_CIPHERTEXT", "AI model credential migration is incomplete; startup refused");
+    }
+    return {
+      id: row.id,
+      provider: row.provider || "openai",
+      protocol: row.protocol || (row.provider === "anthropic" ? "anthropic" : row.provider === "gemini" ? "gemini" : "openai-compatible"),
+      name: row.name,
+      baseUrl: row.base_url,
+      model: row.model,
+      apiKey: decoded.plaintext,
+      enabled: Boolean(row.enabled),
+      temperature: Number(row.temperature ?? 0.1),
+      useLeadFinder: row.use_lead_finder === undefined || row.use_lead_finder === null ? true : Boolean(row.use_lead_finder),
+      useWebsiteParse: row.use_website_parse === undefined || row.use_website_parse === null ? true : Boolean(row.use_website_parse),
+      useScoring: row.use_scoring === undefined || row.use_scoring === null ? true : Boolean(row.use_scoring),
+      useEmailDraft: row.use_email_draft === undefined || row.use_email_draft === null ? true : Boolean(row.use_email_draft),
+      useExam: Boolean(row.use_exam),
+      lastTestAt: row.last_test_at instanceof Date ? row.last_test_at.toISOString() : row.last_test_at || undefined,
+      lastTestStatus: row.last_test_status || "untested",
+      lastTestMessage: row.last_test_message || "",
+      ownerId: row.owner_id,
+      teamId: row.team_id,
+      updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at
+    } satisfies AiModelConfig;
   }));
 }
 
-async function loadLeadSourceConfigs(pool: mysql.Pool): Promise<LeadSourceConfig[]> {
-  return (await rows<Record<string, any>>(pool, "SELECT * FROM lead_source_configs ORDER BY updated_at DESC")).map((row) => ({
-    id: row.id,
-    provider: row.provider,
-    scope: row.scope === "team" ? "team" : "personal",
-    apiKey: row.api_key || "",
-    baseUrl: row.base_url || "",
-    enabled: Boolean(row.enabled),
-    lastTestAt: row.last_test_at instanceof Date ? row.last_test_at.toISOString() : row.last_test_at || undefined,
-    lastTestStatus: row.last_test_status || "untested",
-    lastTestMessage: row.last_test_message || "",
-    usageJson: row.usage_json || undefined,
-    ownerId: row.owner_id,
-    teamId: row.team_id,
-    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at
+async function loadLeadSourceConfigs(pool: mysql.Pool, vault: SecretVault): Promise<LeadSourceConfig[]> {
+  const configRows = await rows<Record<string, any>>(pool, "SELECT * FROM lead_source_configs ORDER BY updated_at DESC");
+  return Promise.all(configRows.map(async (row) => {
+    const decoded = await decodeCredentialSecret(
+      row.api_key || "",
+      credentialSecretContext("lead-source", row.id, row.owner_id, row.team_id),
+      vault
+    );
+    if (decoded.action !== "none") {
+      throw new SecretVaultError("INVALID_CIPHERTEXT", "Lead-source credential migration is incomplete; startup refused");
+    }
+    return {
+      id: row.id,
+      provider: row.provider,
+      scope: row.scope === "team" ? "team" : "personal",
+      apiKey: decoded.plaintext,
+      baseUrl: row.base_url || "",
+      enabled: Boolean(row.enabled),
+      lastTestAt: row.last_test_at instanceof Date ? row.last_test_at.toISOString() : row.last_test_at || undefined,
+      lastTestStatus: row.last_test_status || "untested",
+      lastTestMessage: row.last_test_message || "",
+      usageJson: row.usage_json || undefined,
+      ownerId: row.owner_id,
+      teamId: row.team_id,
+      updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at
+    } satisfies LeadSourceConfig;
   }));
 }
 
@@ -1668,7 +1836,9 @@ async function loadWhatsAppMessages(pool: mysql.Pool): Promise<WhatsAppMessage[]
   }));
 }
 
-async function persistAll(pool: mysql.Pool, store: CrmStore) {
+async function persistAll(pool: mysql.Pool, store: CrmStore, vault: SecretVault) {
+  const protectedAiKeys = await protectCredentialRecords("ai-model", store.aiModelConfigs, vault);
+  const protectedLeadSourceKeys = await protectCredentialRecords("lead-source", store.leadSourceConfigs, vault);
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -1695,8 +1865,8 @@ async function persistAll(pool: mysql.Pool, store: CrmStore) {
 	    await replaceRows(connection, "wecom_messages", store.wecomMessages, (item) => [item.id, item.customerId, item.summary, item.ownerId, item.teamId, item.status], "(id,customer_id,summary,owner_id,team_id,status)");
 	    await replaceRows(connection, "ocr_jobs", store.ocrJobs, (item) => [item.id, item.status, item.confidence, JSON.stringify(item.fields), item.ownerId, item.ownerId, item.teamId], "(id,status,confidence,fields_json,created_by,owner_id,team_id)");
 	    await replaceRows(connection, "website_opportunities", store.websiteOpportunities, (item) => [item.id, item.company, item.business, item.country, item.website, item.contact, item.contactInfo, item.description, item.ownerId, item.teamId, item.status, item.customerId || null, item.dealId || null, item.leadId || null, item.parseMode || "rule", item.source || "", item.sourceLabel || "", item.confidence ?? null, item.lastDevelopmentEmailAt ? mysqlDate(item.lastDevelopmentEmailAt) : null, item.lastDevelopmentEmailSubject || "", item.lastDevelopmentEmailTo || "", item.verifiedAt ? mysqlDate(item.verifiedAt) : null, item.statusChangedAt ? mysqlDate(item.statusChangedAt) : null, item.excludedReason || "", mysqlDate(item.createdAt)], "(id,company,business,country,website,contact,contact_info,description,owner_id,team_id,status,customer_id,deal_id,lead_id,parse_mode,source,source_label,confidence,last_development_email_at,last_development_email_subject,last_development_email_to,verified_at,status_changed_at,excluded_reason,created_at)");
-	    await replaceRows(connection, "ai_model_configs", store.aiModelConfigs, (item) => [item.id, item.provider, item.protocol || "openai-compatible", item.name, item.baseUrl, item.model, item.apiKey, item.enabled, item.temperature ?? 0.1, item.useLeadFinder ?? true, item.useWebsiteParse ?? true, item.useScoring ?? true, item.useEmailDraft ?? true, item.useExam ?? false, item.lastTestAt ? mysqlDate(item.lastTestAt) : null, item.lastTestStatus || "untested", item.lastTestMessage || "", item.ownerId, item.teamId, mysqlDate(item.updatedAt)], "(id,provider,protocol,name,base_url,model,api_key,enabled,temperature,use_lead_finder,use_website_parse,use_scoring,use_email_draft,use_exam,last_test_at,last_test_status,last_test_message,owner_id,team_id,updated_at)");
-	    await replaceRows(connection, "lead_source_configs", store.leadSourceConfigs, (item) => [item.id, item.provider, item.scope || "personal", item.apiKey, item.baseUrl || "", item.enabled, item.lastTestAt ? mysqlDate(item.lastTestAt) : null, item.lastTestStatus || "untested", item.lastTestMessage || "", item.usageJson || "", item.ownerId, item.teamId, mysqlDate(item.updatedAt)], "(id,provider,scope,api_key,base_url,enabled,last_test_at,last_test_status,last_test_message,usage_json,owner_id,team_id,updated_at)");
+	    await replaceRows(connection, "ai_model_configs", store.aiModelConfigs, (item) => [item.id, item.provider, item.protocol || "openai-compatible", item.name, item.baseUrl, item.model, protectedAiKeys.get(item.id) || "", item.enabled, item.temperature ?? 0.1, item.useLeadFinder ?? true, item.useWebsiteParse ?? true, item.useScoring ?? true, item.useEmailDraft ?? true, item.useExam ?? false, item.lastTestAt ? mysqlDate(item.lastTestAt) : null, item.lastTestStatus || "untested", item.lastTestMessage || "", item.ownerId, item.teamId, mysqlDate(item.updatedAt)], "(id,provider,protocol,name,base_url,model,api_key,enabled,temperature,use_lead_finder,use_website_parse,use_scoring,use_email_draft,use_exam,last_test_at,last_test_status,last_test_message,owner_id,team_id,updated_at)");
+	    await replaceRows(connection, "lead_source_configs", store.leadSourceConfigs, (item) => [item.id, item.provider, item.scope || "personal", protectedLeadSourceKeys.get(item.id) || "", item.baseUrl || "", item.enabled, item.lastTestAt ? mysqlDate(item.lastTestAt) : null, item.lastTestStatus || "untested", item.lastTestMessage || "", item.usageJson || "", item.ownerId, item.teamId, mysqlDate(item.updatedAt)], "(id,provider,scope,api_key,base_url,enabled,last_test_at,last_test_status,last_test_message,usage_json,owner_id,team_id,updated_at)");
 	    await replaceRows(connection, "problems", store.problems, (item) => [item.id, item.title, item.category, item.severity, item.status, item.ownerId, item.teamId, item.relatedCustomer, item.rootCause, item.solution, item.nextAction, item.dueAt, mysqlDate(item.createdAt)], "(id,title,category,severity,status,owner_id,team_id,related_customer,root_cause,solution,next_action,due_at,created_at)");
 	    await replaceRows(connection, "memos", store.memos, (item) => [item.id, item.title, item.content, item.category, item.tags, item.customerId || "", item.dealId || "", item.ownerId, item.teamId, item.pinned, item.archived, item.deletedAt ? mysqlDate(item.deletedAt) : null, mysqlDate(item.updatedAt)], "(id,title,content,category,tags,customer_id,deal_id,owner_id,team_id,pinned,archived,deleted_at,updated_at)");
 	    await replaceRows(connection, "competitors", store.competitors, (item) => [item.id, item.company, item.country, item.segment, item.threatLevel, item.website, item.strengths, item.weaknesses, item.competingProducts, item.ourStrategy, item.ownerId, item.teamId, mysqlDate(item.updatedAt)], "(id,company,country,segment,threat_level,website,strengths,weaknesses,competing_products,our_strategy,owner_id,team_id,updated_at)");

@@ -236,8 +236,11 @@ npm run dev
 启用 MySQL 持久化：
 
 ```bash
-CRM_STORE=mysql DATABASE_URL="mysql://user:password@127.0.0.1:3306/goodjob_crm" npm run dev
+node -e "console.log('local-v1:'+require('node:crypto').randomBytes(32).toString('base64'))"
+CRM_STORE=mysql DATABASE_URL="mysql://user:password@127.0.0.1:3306/goodjob_crm" GOODJOB_SECRET_VAULT_PRIMARY_KEY="local-v1:<base64-output>" npm run dev
 ```
+
+MySQL mode requires a SecretVault primary key so model and lead-source API keys are stored as AES-256-GCM ciphertext. During rotation, configure the new key as `GOODJOB_SECRET_VAULT_PRIMARY_KEY`, keep old keys temporarily in comma-separated `GOODJOB_SECRET_VAULT_DECRYPTION_KEYS`, and remove them only after re-encryption completes. Never commit these keys to Git.
 
 若未配置 MySQL，系统自动使用内存模式。健康检查：
 

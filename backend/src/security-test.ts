@@ -5,6 +5,7 @@ import { getStore } from "./store.js";
 import { runtimeConfigurationIssues } from "./runtime-config.js";
 
 const TEST_JWT_SECRET = "goodjob-security-test-secret-at-least-32-characters";
+const TEST_VAULT_KEY = `test-key:${Buffer.alloc(32, 7).toString("base64")}`;
 const server = app.listen(0);
 const address = server.address();
 if (!address || typeof address === "string") throw new Error("Cannot start security test server");
@@ -55,7 +56,8 @@ try {
     DATABASE_URL: "mysql://goodjob:strong-password@db.internal:3306/goodjob_crm",
     JWT_SECRET: "a-production-secret-that-is-longer-than-thirty-two-characters",
     CORS_ORIGINS: "https://crm.example.com",
-    SESSION_COOKIE_SECURE: "true"
+    SESSION_COOKIE_SECURE: "true",
+    GOODJOB_SECRET_VAULT_PRIMARY_KEY: TEST_VAULT_KEY
   });
   if (safeProductionConfig.length) throw new Error(`safe production config rejected: ${JSON.stringify(safeProductionConfig)}`);
 
@@ -70,6 +72,7 @@ try {
   for (const expectedCode of [
     "PRODUCTION_DATABASE_REQUIRED",
     "JWT_SECRET_REQUIRED",
+    "SECRET_VAULT_KEY_REQUIRED",
     "CORS_ORIGINS_REQUIRED",
     "SECURE_COOKIE_REQUIRED",
     "INITIAL_ADMIN_PASSWORD_WEAK",

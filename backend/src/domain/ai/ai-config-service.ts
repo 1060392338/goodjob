@@ -2,6 +2,7 @@ import type { CrmStore } from "../../store.js";
 import { getStore } from "../../store.js";
 import type { AiModelConfig, SessionUser } from "../../types.js";
 import { ModelGatewayError, type ModelGateway } from "../../gateways/model-gateway.js";
+import { maskSecret } from "../../security/secret-vault.js";
 
 export type AiUseCase = "leadFinder" | "websiteParse" | "scoring" | "emailDraft" | "exam";
 
@@ -39,7 +40,7 @@ export function publicAiConfig(config: AiModelConfig) {
     name: config.name,
     baseUrl: config.baseUrl,
     model: config.model,
-    apiKey: config.apiKey ? `****${config.apiKey.slice(-4)}` : "",
+    apiKey: maskSecret(config.apiKey),
     hasApiKey: Boolean(config.apiKey),
     enabled: config.enabled,
     temperature: config.temperature ?? 0.1,

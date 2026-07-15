@@ -397,6 +397,50 @@
         "commit": "d66eee4",
         "branch": "codex/phase-0-workbook-security"
       }
+    },
+    {
+      "id": "REQ-GJ-SEC-003",
+      "task": "TASK-GJ-0006",
+      "title": "Encrypt model and lead-source credentials through SecretVault",
+      "phase": 2,
+      "status": "in_progress",
+      "priority": "P0",
+      "acceptance": [
+        "Model and lead-source API keys are never stored as plaintext in MySQL",
+        "Legacy plaintext can migrate with checkpoints and repeated migration preserves data",
+        "Damaged ciphertext, unknown or revoked keys, and cross-tenant context decryption fail without plaintext fallback",
+        "Primary-key rotation, transitional decryption keys, consistent masking, and production startup gates are supported",
+        "Logs, errors, and API responses never expose complete keys; real KMS and supplier outbound calls remain zero"
+      ],
+      "tests": [
+        "npm run test:vault --workspace backend",
+        "npm run verify",
+        "npm run test:e2e",
+        "npm run audit:dependencies"
+      ],
+      "evidence": [
+        "docs/engineering/evidence/L-0012-secret-vault.md"
+      ],
+      "design": [
+        "docs/engineering/adr/ADR-0011-secret-vault-credential-encryption.md"
+      ],
+      "dependencies": [
+        "REQ-GJ-ARCH-001",
+        "REQ-GJ-AI-ORCH-001"
+      ],
+      "nonGoals": [
+        "No real cloud KMS or HSM integration",
+        "No real model or lead-source credentials",
+        "No new public API or frontend page"
+      ],
+      "progress": {
+        "currentSlice": {
+          "loop": "L-0012",
+          "scope": "SecretVault, MySQL credential migration, rotation, revocation, and startup gates",
+          "status": "in_progress",
+          "baselineCommit": "9a900a5"
+        }
+      }
     }
   ]
 }

@@ -1,4 +1,6 @@
-﻿export interface RuntimeSecurityEnv {
+import { isValidSecretVaultKeySpec } from "./security/secret-vault.js";
+
+export interface RuntimeSecurityEnv {
   NODE_ENV?: string;
   CRM_STORE?: string;
   DATABASE_URL?: string;
@@ -7,6 +9,7 @@
   CORS_ORIGINS?: string;
   SESSION_COOKIE_SECURE?: string;
   INITIAL_ADMIN_PASSWORD?: string;
+  GOODJOB_SECRET_VAULT_PRIMARY_KEY?: string;
 }
 
 export interface RuntimeConfigurationIssue {
@@ -34,6 +37,11 @@ export function runtimeConfigurationIssues(env: RuntimeSecurityEnv = process.env
   }
   if (jwtSecret.length < 32) {
     issues.push({ code: "JWT_SECRET_REQUIRED", message: "生产环境必须配置至少 32 个字符的 JWT_SECRET" });
+  }
+  if (!configured(env.GOODJOB_SECRET_VAULT_PRIMARY_KEY)) {
+    issues.push({ code: "SECRET_VAULT_KEY_REQUIRED", message: "Production requires a SecretVault primary key for model and lead-source credentials" });
+  } else if (!isValidSecretVaultKeySpec(env.GOODJOB_SECRET_VAULT_PRIMARY_KEY)) {
+    issues.push({ code: "SECRET_VAULT_KEY_INVALID", message: "SecretVault primary key must use key-id:32-byte-base64 format" });
   }
   if (!corsOrigins.length || corsOrigins.includes("*")) {
     issues.push({ code: "CORS_ORIGINS_REQUIRED", message: "生产环境必须配置明确的 CORS_ORIGINS，禁止通配符" });
