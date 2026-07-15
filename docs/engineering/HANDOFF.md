@@ -6,60 +6,82 @@
 
 - 仓库：`C:\Users\Administrator\Documents\Codex\2026-07-13\hi\GoodJob`
 - 分支：`codex/phase-1-route-modularization`
-- 最近完成循环：`L-0008`
-- 需求/任务：`REQ-GJ-ARCH-001 / TASK-GJ-0003`
-- 基线 Commit：`6194cee`
-- 代码交付 Commit：`9160a90`
-- 证据：`docs/engineering/evidence/L-0008-ai-config-model-gateway.md`
-- 总体状态：L-0008 已完成本地 DoD；阶段 2 与 `REQ-GJ-ARCH-001` 继续 `in_progress`；`REQ-GJ-AI-001` 仍为 backlog
+- GitHub：`https://github.com/1060392338/goodjob.git`
+- L-0009 基线：`e3a3055`
+- L-0009 代码 Commit：`59594d1`
+- 当前待完成：提交 L-0009 闭环文档并推送 GitHub。
+- 禁止推送 Gitee `origin`。
 
-## L-0008 已完成内容
+## L-0009 已完成内容
 
-- AI 配置读取、保存、删除、连接测试 4 个 API 已迁出 `server.ts`。
-- 新增可注入 `ModelGateway`，统一 OpenAI-compatible、Anthropic、Gemini。
-- Gateway 提供 Trace ID、超时、SSRF 地址检查、错误分类、响应信封校验和 Key 脱敏。
-- 翻译、AI 搜客、官网 AI 解析的底层调用已统一经过生产 Gateway；这些业务路由尚未迁移。
-- 配置按 `ownerId` 隔离；外租户 ID 不可读取、覆盖、测试或删除。
-- 连接测试必须返回严格 `{ "ok": true }`，非法结构化内容判定失败。
-- 新增两组测试：
-  - `backend/src/gateways/model-gateway-test.ts`
-  - `backend/src/routes/ai-config-routes-test.ts`
-- `server.ts` 6258 → 5974 行，净减少 284 行。
-- 无数据库结构变化，无新生产依赖，无真实模型外呼或真实密钥。
+1. 新增 `ADR-0008`，冻结线索来源配置与 `LeadSourceConnector` 边界。
+2. 迁移 4 个 API：
+   - `GET /api/lead-finder/providers`
+   - `POST /api/lead-finder/source-config`
+   - `POST /api/lead-finder/source-config/test`
+   - `DELETE /api/lead-finder/source-config/:provider`
+3. 新增 `backend/src/connectors/lead-source-connector.ts`：
+   - 生产实现装配既有 Provider 注册表；
+   - Trace ID；
+   - `unconfigured/authentication/timeout/rate_limited/invalid_response/provider_error/security_rejected`；
+   - 自定义 Base URL SSRF 拒绝；
+   - 原始/URL 编码 Key、Authorization 和常见查询参数脱敏。
+4. 新增 `lead-source-config-service.ts` 和 `lead-source-config-routes.ts`。
+5. 配置继续按 `ownerId` 用户级隔离；公开响应只返回尾四位掩码。
+6. 分页/检查点契约已预留，但完整搜索和断点恢复未迁移、不得宣称完成。
+7. `server.ts` 5974 → 5823，净减少 151 行；无数据库迁移、无新生产依赖。
 
 ## 不得隐式改变的语义
 
-- 所有模型传输必须通过 `ModelGateway`，业务代码不得重新直接调用厂商 SDK/HTTP。
-- 私网/本机模型地址默认禁止；只有显式 `ALLOW_PRIVATE_AI_ENDPOINTS=true` 可放行。
-- 原始 API Key 不得出现在 HTTP 响应、日志或错误；Gemini 查询参数也必须脱敏。
-- AI 配置当前是用户私有，不是团队共享；如需团队共享必须先新增 ADR 和权限矩阵。
-- 完整 AI 功能尚未开始：Prompt/Schema 版本、用量、自动重试、审计和金标评测仍属阶段 4。
-- 真实模型 Key 投入前必须处理 R-012 的 at-rest 明文风险。
-- 真实社交/协作平台发送必须走阶段 6 `CollaborationAdapter`，不得从 AI 或现有 `/social-touch` 绕过。
+- GoodJob 现有行为是唯一业务基线，不进行 MVP 式重写。
+- 来源配置仍为个人配置，不是团队共享配置。
+- Provider 元数据、AI 搜索状态、成功响应和 167 个 API 操作保持兼容。
+- 掩码 Key 更新必须保留服务端原 Key，不能把 `****xxxx` 当真实凭证保存。
+- 自定义私网/本机 Base URL 必须在真实 Connector/Provider 调用前拒绝。
+- 专项测试不得连接真实第三方数据源或使用真实 Key。
+- 完整来源搜索仍是阶段 3 backlog；当前 Connector 单页适配不能被描述为已支持分页恢复。
+- 钉钉、企微、飞书必须通过未来 `CollaborationAdapter`，不得直接写厂商调用。
 
-## L-0008 验证
+## L-0009 测试证据
 
 ```text
-npm run test:gateway:model --workspace backend  PASS
-npm run test:routes:ai-config --workspace backend PASS
-npm run test:routes                          PASS
-npm run test --workspace backend             PASS
-npm run test:security                        PASS，API 167，tenant isolation 18
-npm run build --workspace backend            PASS
-npm run verify                               PASS
-npm run test:e2e                             PASS，37/37
-npm run audit:dependencies                   PASS，0 vulnerabilities
-npm run test:repo-security（暂存新文件后）    PASS，114 files
-git diff --check                             PASS
+npm run test:connector:lead-source --workspace backend      PASS
+npm run test:routes:lead-source-config --workspace backend PASS
+npm run test:routes                                         PASS
+npm run test --workspace backend                            PASS
+npm run test:security                                       PASS，API 167，tenant isolation 18
+npm run build --workspace backend                           PASS
+npm run verify                                              PASS
+npm run test:e2e                                            PASS，37/37
+npm run audit:dependencies                                  PASS，0 vulnerabilities
+npm run test:repo-security（闭环文档暂存后）                PASS，122 files
+git diff --check / git diff --cached --check                PASS
 ```
 
-依赖审计首次因 npm Registry TLS 中断失败，使用本机代理重试后通过；不得把首次失败从证据中删除。
+专项测试证明：
+
+- 7 类 Connector 错误；
+- Key、URL 编码 Key、Authorization 和查询参数脱敏；
+- 自定义私网地址在外呼前拒绝；
+- 4 个配置 API 的读/存/测/删租户隔离；
+- 掩码 Key 保留；
+- Mock 真实外呼次数为 0；
+- cursor/checkpoint/nextCursor/nextCheckpoint/exhausted 契约存在，未实现时明确失败。
+
+## 已登记风险
+
+- R-004：`server.ts` 已继续缩减，但 `prototype-api.ts` 约 11745 行。
+- R-005：MySQL Store 仍是全量持久化，Repository/Unit of Work 未完成。
+- R-006：完整网页采集仍需来源白名单、采集许可、恶意内容隔离、Prompt 注入防护、审计和人工确认。
+- R-011：`pending` 邮件缺少运维处置界面。
+- R-012：模型 API Key 明文 at-rest。
+- R-013：线索来源 API Key 明文 at-rest。
+
+真实模型或数据源 Key 投入前，R-012/R-013 必须采用 KMS/信封加密或外部 Secret 引用，并补齐最小读取权限、轮换和吊销。
 
 ## GitHub 交付规则
 
-- GitHub 是唯一交付远端：`https://github.com/1060392338/goodjob.git`。
-- 禁止推送 Gitee `origin`。
-- 当前分支推送命令：
+仅推送 GitHub：
 
 ```powershell
 git -c http.proxy=http://127.0.0.1:7897 `
@@ -67,28 +89,40 @@ git -c http.proxy=http://127.0.0.1:7897 `
     push github codex/phase-1-route-modularization
 ```
 
+推送后校验：
+
+```powershell
+git ls-remote github refs/heads/codex/phase-1-route-modularization
+git rev-parse HEAD
+git status --short
+```
+
+不得执行：
+
+```powershell
+git push origin
+```
+
 ## 下一开发循环
 
-建议启动 **L-0009：线索来源配置与 LeadSourceConnector 装配边界**，继续阶段 2：
+建议 L-0010：前端 `prototype-api.ts` 单一领域渐进拆分。
 
-1. Orient：阅读 `ADR-0003`、`ADR-0005`、`ADR-0007`、本交接、风险 R-004/R-005/R-006/R-012。
-2. Select：只冻结以下 4 个现有 API，先确认实际代码行和 OpenAPI 契约：
-   - `GET /api/lead-finder/providers`
-   - `POST /api/lead-finder/source-config`
-   - `POST /api/lead-finder/source-config/test`
-   - `DELETE /api/lead-finder/source-config/:provider`
-3. Plan：定义 `LeadSourceConnector` 与连接器错误分类；明确配置归属、密钥脱敏、SSRF、限流、分页/检查点和禁止未授权外呼。
-4. Test first：先建 Mock/契约和失败注入，再迁移路由；测试不得连接真实第三方数据源。
-5. Scope control：不同时迁移完整搜索、网站采集、AI 评分、前端拆分或 Collaboration Adapter。
-6. Gate：继续保持 API 167、tenant isolation 18+、audit high 0、`verify` 和 E2E 37/37。
+1. Orient：阅读 `AGENTS.md`、本交接、`PROJECT_STATUS.md`、`FEATURES.json`、ADR-0005、风险 R-004/R-008。
+2. Select：只冻结“线索来源中心”前端切片，包括 Provider 类型、4 个配置 API 调用、状态刷新和按钮事件；不迁移完整搜索页面。
+3. Plan：保持 DOM ID、提示文案、请求体/响应体、加载状态、移动端和 E2E 选择器兼容。
+4. Test first：先增加模块 self-test/契约测试，再迁移生产代码；不得更换状态管理框架或重做 UI。
+5. Gate：继续保持 API 167、tenant isolation 18+、audit high 0、`verify` 和 Playwright 37/37。
 
-## 持续风险与阻塞
+## 仍未闭环的外部事项
 
-- R-005：MySQL Store 仍是全量持久化，Repository/Unit of Work 未完成。
-- R-006：AI/网页采集仍需来源白名单、内容隔离、Prompt 注入防护、审计和人工确认。
-- R-008：前端主包约 1.394 MB。
-- R-009：GitHub Actions、历史 Secret Scan、分支保护和部署凭证轮换未闭环。
-- R-011：`pending` 邮件缺少运维处置界面。
-- R-012：模型 API Key 仍明文 at-rest；当前不得使用正式生产 Key。
-- GitHub 仓库 Public/Private 决策仍需项目负责人确认。
-- 第三方线索厂商和真实钉钉、企微、飞书企业凭证均未指定。
+- GitHub Actions Linux/Node 22 实跑；
+- GitHub 历史 Secret Scan；
+- 分支保护与必需检查；
+- 部署实例清单和历史凭证轮换；
+- Public/Private 仓库决策；
+- AI/来源 Key at-rest 加密；
+- MySQL Repository/Unit of Work；
+- 完整阶段 3 线索 Connector 管道；
+- 完整阶段 4 AI Gateway；
+- 真实第三方线索厂商；
+- 真实钉钉、企微、飞书企业凭证。

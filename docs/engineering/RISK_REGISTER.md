@@ -7,9 +7,9 @@
 | R-001 | 仓库包含默认登录账号说明或历史示例凭证，可能被误用于真实环境 | Critical | Verification | 当前分支已删除说明与密码预填，并增加生产配置门禁；待 GitHub 历史扫描、部署实例确认及必要轮换 | 阶段 0 |
 | R-002 | 原仓库无 `.gitignore`，依赖、环境文件和运行缓存可能误提交 | High | Mitigated | 已新增 `.gitignore` 与仓库安全检查；远端 CI 待实跑 | 阶段 0 |
 | R-003 | Windows 下测试与 E2E 脚本使用 Unix 环境变量语法 | High | Mitigated | 已使用 `cross-env`，Windows 本地验证通过；Linux 由 GitHub Actions 待验证 | 阶段 0 |
-| R-004 | 后端 `server.ts` 与前端 `prototype-api.ts` 文件过大，修改影响面和冲突风险高 | High | Mitigating | ADR-0005 规定渐进拆分；L-0004~L-0008 已迁移系统/认证/客户/线索/AI 配置共 26 个 API，建立邮件与模型 Gateway、外联幂等和转化回滚测试；`server.ts` 6526→5974；后续继续集成、前端模块与 Repository 边界 | 阶段 2 |
+| R-004 | 后端 `server.ts` 与前端 `prototype-api.ts` 文件过大，修改影响面和冲突风险高 | High | Mitigating | ADR-0005 规定渐进拆分；L-0004~L-0009 已迁移系统/认证/客户/线索/AI 配置/来源配置共 30 个 API，建立邮件、模型与线索来源边界；`server.ts` 6526→5823；后续继续前端模块与 Repository 边界 | 阶段 2 |
 | R-005 | MySQL Store 具有原型阶段全量持久化特征，扩展性与数据竞争风险高 | High | Open | 设计正式迁移与按表/按行增量持久化；恢复演练 | 阶段 2 |
-| R-006 | AI/网页采集可能造成敏感数据泄漏、提示注入或不合规采集 | Critical | Open | L-0008 已完成模型调用 SSRF 拒绝、密钥脱敏和统一 Gateway；仍需来源白名单、恶意内容隔离、Prompt 注入防护、审计和人工确认 | 阶段 1/3/4 |
+| R-006 | AI/网页采集可能造成敏感数据泄漏、提示注入或不合规采集 | Critical | Open | L-0008/L-0009 已完成模型和线索来源调用的 SSRF 拒绝、密钥脱敏与统一边界；仍需来源白名单、采集许可、恶意内容隔离、Prompt 注入防护、审计和人工确认 | 阶段 1/3/4 |
 | R-007 | WhatsApp/Twilio/Puppeteer 等依赖安装包含大型浏览器下载，影响 CI 可重复性 | Medium | Open | CI 跳过非必要 Puppeteer 下载；WhatsApp 独立可选运行时 | 阶段 2 |
 | R-008 | 前端主包约 1.394 MB，首屏和维护性存在风险 | Medium | Open | 建立性能基线并按模块动态拆包；工作簿能力后续评估按需加载 | 阶段 2/7 |
 | R-009 | GitHub 远端、质量门禁与保护规则未完全闭环 | High | Mitigating | 已建立 `github` 远端并推送 master/开发分支；待完成 Actions 实跑、历史 Secret Scan、分支保护与部署凭证确认 | 阶段 0 |
@@ -17,5 +17,7 @@
 | R-011 | SMTP 超时或发送成功后最终持久化失败会留下结果不确定的 `pending` 外联请求，人工使用新键仍可能造成重复邮件 | High | Open | 发送前持久化 pending；相同键返回 409 且不自动重发；保存外部消息 ID；后续增加运维查询、人工确认、受控重试和告警 | 阶段 2/7 |
 
 | R-012 | `ai_model_configs.api_key` 当前仍以明文 at-rest 保存，全量 Store 持久化和备份可能扩大凭证暴露面 | Critical | Open | 当前仅允许假密钥；真实模型 Key 投入前必须使用 KMS/信封加密或外部 Secret 引用，并补齐最小读取权限、轮换和吊销流程 | 阶段 2/4 |
+
+| R-013 | `lead_source_configs.api_key` 当前仍以明文 at-rest 保存，全量 Store 持久化和备份可能扩大第三方数据源凭证暴露面 | Critical | Open | 当前只允许测试假密钥；真实数据源 Key 投入前必须使用 KMS/信封加密或外部 Secret 引用，并补齐最小读取权限、轮换、吊销和供应商侧额度告警 | 阶段 2/3 |
 
 任何 Critical 风险在关闭或正式签署接受前不得发布内部正式版。

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0008",
+  "currentIteration": "L-0009",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -92,12 +92,14 @@
         "docs/engineering/evidence/L-0005-customer-modularization.md",
         "docs/engineering/evidence/L-0006-lead-modularization.md",
         "docs/engineering/evidence/L-0007-lead-outreach-conversion.md",
-        "docs/engineering/evidence/L-0008-ai-config-model-gateway.md"
+        "docs/engineering/evidence/L-0008-ai-config-model-gateway.md",
+        "docs/engineering/evidence/L-0009-lead-source-connector.md"
       ],
       "design": [
         "docs/engineering/adr/ADR-0005-route-modularization.md",
         "docs/engineering/adr/ADR-0006-lead-outreach-conversion-boundaries.md",
-        "docs/engineering/adr/ADR-0007-ai-config-model-gateway-boundary.md"
+        "docs/engineering/adr/ADR-0007-ai-config-model-gateway-boundary.md",
+        "docs/engineering/adr/ADR-0008-lead-source-connector-boundary.md"
       ],
       "progress": {
         "completedSlices": [
@@ -108,31 +110,33 @@
           "客户查询/创建/更新/批量删除/活动 5 个 API 与客户领域服务",
           "线索查询/详情/创建/摄取/更新/垃圾箱/恢复/永久删除/活动 9 个 API、来源血缘与线索领域服务",
           "线索社交触达、邮件发送、转化预览与转客户/商机 4 个 API，含邮件 Gateway、外联幂等和跨聚合回滚",
-          "AI 配置读取/保存/删除/连接测试 4 个 API、统一 ModelGateway、租户隔离、SSRF 防护和密钥脱敏"
+          "AI 配置读取/保存/删除/连接测试 4 个 API、统一 ModelGateway、租户隔离、SSRF 防护和密钥脱敏",
+          "线索来源 Provider 状态、配置保存/测试/删除 4 个 API、统一 LeadSourceConnector、用户级隔离、SSRF 防护和密钥脱敏"
         ],
         "nextSlices": [
-          "线索来源配置与 LeadSourceConnector 装配边界",
-          "前端 prototype-api.ts 按领域拆分",
-          "Repository/Unit of Work 与 MySQL 增量持久化边界"
+          "前端 prototype-api.ts 按单一领域渐进拆分",
+          "Repository/Unit of Work 与 MySQL 增量持久化边界",
+          "完整线索搜索、分页/检查点、重试与幂等摄取管道"
         ],
-        "verification": "PASS: system/auth/customer/lead/outreach/conversion/AI config route integration; ModelGateway 3-protocol contract and failure injection; API operation baseline 167; tenant isolation 18; npm run verify; Playwright 37/37; audit high 0",
-        "deliveryCommit": "9160a90",
+        "verification": "PASS: system/auth/customer/lead/outreach/conversion/AI config/lead source config route integration; ModelGateway and LeadSourceConnector contracts; API operation baseline 167; tenant isolation 18; npm run verify; Playwright 37/37; audit high 0",
+        "deliveryCommit": "59594d1",
         "currentSlice": {
-          "loop": "L-0008",
-          "scope": "AI 配置 4 个 API 与 ModelGateway 传输和装配边界",
+          "loop": "L-0009",
+          "scope": "线索来源配置 4 个 API 与 LeadSourceConnector 装配边界",
           "status": "done",
-          "baselineCommit": "6194cee",
+          "baselineCommit": "e3a3055",
           "acceptance": [
-            "4 个 AI 配置 API 迁出 server.ts 且 API 操作总数保持 167",
-            "OpenAI-compatible、Anthropic、Gemini 统一通过可注入 ModelGateway 调用",
-            "未配置、缺少 Key、认证失败、超时、限流、非法响应和 SSRF 均有失败注入覆盖",
-            "配置读取、更新、测试和删除保持用户级租户隔离，外租户 ID 冲突不得覆盖",
-            "API Key 只返回尾四位掩码，公开错误不得泄露凭证或认证头",
-            "专项 Gateway/路由测试、self-test、security、verify、audit 与 E2E 全部通过"
+            "4 个来源配置 API 迁出 server.ts 且 API 操作总数保持 167",
+            "现有 Provider 注册表通过可注入 LeadSourceConnector 装配",
+            "未配置、认证失败、超时、限流、非法响应、供应商失败和 SSRF 均有失败注入覆盖",
+            "来源配置读取、保存、测试和删除保持用户级租户隔离",
+            "API Key 只返回尾四位掩码，公开错误不得泄露原始或 URL 编码后的凭证",
+            "分页与检查点字段已冻结，但完整搜索和断点恢复仍保持 backlog",
+            "专项 Connector/路由测试、self-test、security、verify、audit 与 E2E 全部通过"
           ],
           "tests": [
-            "npm run test:gateway:model --workspace backend",
-            "npm run test:routes:ai-config --workspace backend",
+            "npm run test:connector:lead-source --workspace backend",
+            "npm run test:routes:lead-source-config --workspace backend",
             "npm run test:routes",
             "npm run test",
             "npm run test:security",
@@ -140,18 +144,18 @@
             "npm run test:e2e",
             "npm run audit:dependencies"
           ],
-          "design": "docs/engineering/adr/ADR-0007-ai-config-model-gateway-boundary.md",
-          "codeCommit": "9160a90",
+          "design": "docs/engineering/adr/ADR-0008-lead-source-connector-boundary.md",
+          "codeCommit": "59594d1",
           "completedAt": "2026-07-15",
           "verification": {
-            "gatewayContract": "PASS: 3 protocols; unconfigured/auth/timeout/rate-limit/invalid/security failures; outbound 0; secret redaction",
-            "routeTests": "PASS: 4 AI config APIs; tenant isolation; masked-key preservation; failure status persistence",
+            "connectorContract": "PASS: 7 error classes; pagination/checkpoint contract; outbound 0; secret redaction",
+            "routeTests": "PASS: 4 source config APIs; read/save/test/delete tenant isolation; masked-key preservation; SSRF before connector",
             "apiContract": "PASS: registered/OpenAPI operations 167; cross-module tenant isolation 18",
             "fullGate": "PASS: npm run test; npm run test:security; npm run verify; npm audit high 0",
             "e2e": "PASS: Playwright 37/37",
             "diff": "PASS: git diff --check"
           },
-          "evidence": "docs/engineering/evidence/L-0008-ai-config-model-gateway.md"
+          "evidence": "docs/engineering/evidence/L-0009-lead-source-connector.md"
         }
       }
     },
@@ -192,7 +196,14 @@
         "idempotency",
         "resume from checkpoint"
       ],
-      "evidence": []
+      "evidence": [
+        "docs/engineering/evidence/L-0009-lead-source-connector.md"
+      ],
+      "design": [
+        "docs/engineering/adr/ADR-0003-external-adapters.md",
+        "docs/engineering/adr/ADR-0008-lead-source-connector-boundary.md"
+      ],
+      "note": "L-0009 只完成配置和连接测试前置边界；标准化管道、完整分页/检查点、重试、幂等和来源证据仍未完成，状态保持 backlog。"
     },
     {
       "id": "REQ-GJ-AI-LEAD-001",

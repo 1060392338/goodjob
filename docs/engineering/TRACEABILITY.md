@@ -20,9 +20,9 @@ OBJ → REQ/NFR → ADR/DESIGN → TASK → PR/COMMIT → TEST → BUILD → REL
 | REQ-GJ-ENG-001 | ADR-0001 | TASK-GJ-0001 | Commit `3d7cce6` | `npm run verify`; `npm run test:e2e` 36/36 | Done |
 | REQ-GJ-SEC-001 | 风险 R-001；`DEVELOPMENT_ACCOUNTS.md` | TASK-GJ-0002 | 分支 `codex/phase-0-security-baseline` | 仓库安全检查；生产配置测试；`npm run verify`; E2E 36/36 | Verification |
 | REQ-GJ-SEC-002 | ADR-0004；风险 R-010 | TASK-GJ-0004 | 分支 `codex/phase-0-workbook-security` | 依赖审计 0；工作簿安全测试；`npm run verify`；E2E 37/37 | Done |
-| REQ-GJ-ARCH-001 | ADR-0005/0006/0007；风险 R-004/R-005/R-006/R-011/R-012；L-0004~L-0008 证据 | TASK-GJ-0003 | Commit `4e25f1d` + `ff90350` + `3e5c5b3` + `dde131a` + `9160a90`；分支 `codex/phase-1-route-modularization` | 七组独立路由/Gateway 测试；来源血缘；邮件/模型 Gateway；外联幂等；转化回滚；API 167；tenant isolation 18；`verify`；audit 0；E2E 37/37 | In progress |
+| REQ-GJ-ARCH-001 | ADR-0005/0006/0007/0008；风险 R-004/R-005/R-006/R-011/R-012/R-013；L-0004~L-0009 证据 | TASK-GJ-0003 | Commit `4e25f1d` + `ff90350` + `3e5c5b3` + `dde131a` + `9160a90` + `59594d1`；分支 `codex/phase-1-route-modularization` | 九组独立路由/Gateway/Connector 测试；来源血缘；邮件/模型 Gateway；LeadSourceConnector；外联幂等；转化回滚；API 167；tenant isolation 18；`verify`；audit 0；E2E 37/37 | In progress |
 | REQ-GJ-AI-001 | ADR-0002/0007；L-0008 仅建立前置传输边界 | TASK-GJ-0101 | 前置边界 Commit `9160a90` | 已覆盖三协议传输、脱敏、SSRF、超时和错误分类；Prompt/Schema 版本、用量、重试、审计仍未完成 | Backlog |
-| REQ-GJ-LEAD-001 | ADR-0003 | TASK-GJ-0201 | 待开始 | Connector 契约与幂等 | Backlog |
+| REQ-GJ-LEAD-001 | ADR-0003/0008；L-0009 仅建立配置与连接测试前置边界 | TASK-GJ-0201 | 前置边界 Commit `59594d1` | 已覆盖 Provider 注册、连接错误分类、脱敏、SSRF 与分页/检查点字段；完整标准化管道、重试、幂等和断点恢复仍未完成 | Backlog |
 | REQ-GJ-AI-LEAD-001 | ADR-0002 | TASK-GJ-0301 | 待开始 | 金标评测；注入防护 | Backlog |
 | REQ-GJ-AI-ASSIST-001 | ADR-0002 | TASK-GJ-0401 | 待开始 | 权限矩阵；确认执行 | Backlog |
 | REQ-GJ-COLLAB-001 | ADR-0003 | TASK-GJ-0501 | 待开始 | Adapter 契约；Webhook 安全 | Backlog |

@@ -341,3 +341,48 @@
 - 证据：`docs/engineering/evidence/L-0008-ai-config-model-gateway.md`。
 - L-0008 切片完成；`REQ-GJ-ARCH-001` 与阶段 2 继续 `in_progress`，`REQ-GJ-AI-001` 继续 backlog。
 - 下一循环 L-0009 建议处理线索来源配置 4 个 API 与 `LeadSourceConnector` 装配边界，先建立 Mock/契约，再迁移；不得混入真实供应商或协作平台凭证。
+
+## 2026-07-15 — Loop L-0009：线索来源配置与 LeadSourceConnector 装配边界
+
+### Orient / Select
+
+- 基线 Commit：`e3a3055`；分支：`codex/phase-1-route-modularization`。
+- 继续 `REQ-GJ-ARCH-001 / TASK-GJ-0003`，只为 `REQ-GJ-LEAD-001` 建立配置和连接测试前置边界，其状态继续 backlog。
+- 冻结 Provider 列表、来源配置保存、连接测试和删除 4 个 API；完整搜索、网站采集、AI 评分、协作平台、前端拆分和 Repository 均排除在本循环外。
+- 新增 R-013 跟踪线索来源 Key 明文 at-rest 风险；本循环只使用假密钥和 Mock。
+
+### Plan / Acceptance
+
+- 新增 `ADR-0008`，冻结 `LeadSourceConnector`、Composition Root 装配、用户级配置隔离、SSRF 和公开错误脱敏。
+- Connector 分类未配置、认证、超时、限流、非法响应、供应商失败和安全拒绝。
+- 预留 cursor/checkpoint/nextCursor/nextCheckpoint/exhausted；不伪造尚未实现的断点恢复。
+- 完整计划、验收、测试和回滚：`docs/engineering/evidence/L-0009-lead-source-connector.md`。
+
+### Implement
+
+- 新增 `lead-source-connector.ts`，把既有 Provider 注册表装配为统一 Connector，并提供 Trace ID、错误分类、SSRF 复核和 Key/Authorization/查询参数脱敏。
+- 新增 `lead-source-config-service.ts`，集中用户配置查询、公开 DTO、Provider 状态和 AI 搜索状态。
+- 新增 `lead-source-config-routes.ts`，4 个 API 迁出 `server.ts` 并显式装配。
+- 完整搜索继续复用领域服务读取配置，但执行路径仍保持既有 Provider 行为，留待阶段 3 独立迁移。
+- 新增 Connector 契约测试和来源配置路由测试，并纳入 `test:routes` / `verify`。
+- `server.ts` 5974 → 5823 行，净减少 151 行；无数据库结构变化、无新生产依赖。
+
+### Verify / Review
+
+- `npm run test:connector:lead-source --workspace backend`：PASS；7 类错误、分页/检查点字段、真实外呼 0、密钥脱敏通过。
+- `npm run test:routes:lead-source-config --workspace backend`：PASS；4 路由、读/存/测/删租户隔离、掩码保留和 SSRF 前置拒绝通过。
+- `npm run test:routes`：PASS；九组路由/Gateway/Connector 门禁通过。
+- `npm run test --workspace backend`：PASS。
+- `npm run test:security`：PASS；API 操作 167；跨模块租户隔离 18。
+- `npm run build --workspace backend`：PASS。
+- `npm run verify`：PASS；双端测试、安全、工作簿和构建通过。
+- `npm run test:e2e`：PASS，Chromium 37/37。
+- `npm run audit:dependencies`：PASS，0 vulnerabilities。
+- 代码暂存后 `npm run test:repo-security`：PASS，121 个文件；`git diff --check`：PASS。
+
+### Record / Next
+
+- 代码 Commit：`59594d1`。
+- 证据：`docs/engineering/evidence/L-0009-lead-source-connector.md`。
+- L-0009 切片完成；`REQ-GJ-ARCH-001` 与阶段 2 继续 `in_progress`，`REQ-GJ-LEAD-001` 继续 backlog。
+- 下一循环 L-0010 建议从前端 `prototype-api.ts` 选择“线索来源中心”单一切片，先建立模块 self-test，再迁移；不得同时重写 UI、状态管理或完整搜索。
