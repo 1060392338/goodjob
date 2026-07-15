@@ -487,12 +487,14 @@
       ],
       "evidence": [
         "docs/engineering/evidence/L-0009-lead-source-connector.md",
-        "docs/engineering/evidence/L-0017-lead-ingestion-pipeline.md"
+        "docs/engineering/evidence/L-0017-lead-ingestion-pipeline.md",
+        "docs/engineering/evidence/L-0018-csv-excel-lead-connector.md"
       ],
       "design": [
         "docs/engineering/adr/ADR-0003-external-adapters.md",
         "docs/engineering/adr/ADR-0008-lead-source-connector-boundary.md",
-        "docs/engineering/adr/ADR-0016-lead-ingestion-pipeline.md"
+        "docs/engineering/adr/ADR-0016-lead-ingestion-pipeline.md",
+        "docs/engineering/adr/ADR-0017-csv-excel-lead-connector.md"
       ],
       "note": "L-0009 完成配置与连接测试前置边界；L-0017 已完成统一标准化、血缘、稳定键、幂等 Sink 和检查点失败恢复契约。当前进入 L-0018 CSV/Excel Connector；网页/搜索和第三方 API 分别由 L-0019/L-0020 交付。",
       "increments": [

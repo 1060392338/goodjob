@@ -698,3 +698,18 @@
 - 证据：`docs/engineering/evidence/L-0017-lead-ingestion-pipeline.md`。
 - R-015 保持 Mitigating；真实样本与供应商验收留待后续。
 - 下一循环 L-0018：CSV/Excel Connector 接入统一管道。
+
+
+## 2026-07-15 — Loop L-0018：CSV/Excel Connector（进行中）
+
+### Register / Test-first
+
+- 新增 ADR-0017 与 L-0018 Evidence，设计为前后端复用同一工作簿安全 package。
+- 创建 file connector 专项契约测试并接入后端 test。
+- 首次专项按预期以 ERR_MODULE_NOT_FOUND 失败：@goodjob/workbook-security 尚未加入 workspace/package-lock。
+
+### 当前中断点
+
+- 已创建共享 package 骨架与类型声明，但未完成依赖接线、前端迁移和 Connector 实现。
+- 当前变化作为 Test-first/Red 检查点保存；L-0018 不得标记 Done。
+- 完整恢复步骤见 docs/engineering/HANDOFF.md。

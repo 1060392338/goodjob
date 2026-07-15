@@ -2,45 +2,82 @@
 
 更新时间：2026-07-15
 
+## 可恢复结论
+
+当前文档和工作区足以从同一位置继续开发。稳定基线是 GitHub 分支 codex/phase-3-lead-pipeline 的 Commit 29299ed；L-0017 已完整验收并推送。L-0018 仅到 Test-first/共享模块骨架阶段，明确未完成、未提交、未推送，不得混报。
+
 ## 当前工作位置
 
-- 仓库：`C:\Users\Administrator\Documents\Codex\2026-07-13\hi\GoodJob`
-- 分支：`codex/phase-3-lead-pipeline`
-- GitHub：`https://github.com/1060392338/goodjob.git`
+- 仓库：C:\Users\Administrator\Documents\Codex\2026-07-13\hi\GoodJob
+- 分支：codex/phase-3-lead-pipeline
+- GitHub：1060392338/goodjob
+- L-0017 稳定基线：29299ed
+- 当前分支 HEAD：L-0018 Test-first/Red 检查点（以 git log 最新提交为准）
 - 当前 Loop：L-0018（CSV/Excel Connector）
-- 阶段 2 收口 Commit：`60cf336`
-- L-0017 实现 Commit：`308cb67`
-- 禁止推送 Gitee `origin`。
+- 当前 REQ/TASK：REQ-GJ-LEAD-001 / TASK-GJ-0201，状态保持 in_progress
+- 禁止推送或操作 Gitee origin。
 
-## L-0017 已完成内容
+## 已稳定完成：L-0017
 
-1. 新增 Connector、Sink、Checkpoint Store 统一契约和 `LeadIngestionPipeline`；
-2. 完成规范化、稳定记录键、逐记录血缘、幂等 Sink、上下文绑定 checkpoint 和失败恢复；
-3. Secret-like payload/checkpoint 失败关闭，错误租户/来源/版本上下文拒绝恢复；
-4. CRM Sink 复用现有 `persistLeadFromSource` 幂等和来源血缘逻辑；
-5. 未修改公开 API/数据表，真实外呼 0。
+- 实现 Commit：308cb67；文档收口 Commit：29299ed；
+- 专项：normalized fields 7、persisted 2、故障恢复 true、duplicate writes 0、Secret rejection true、真实外呼 0；
+- verify PASS；repository security 158；API 167；tenant isolation 18；frontend self-test 44；Bundle Budget PASS；
+- dependency audit 0 vulnerabilities；Playwright 37/37；
+- Evidence：docs/engineering/evidence/L-0017-lead-ingestion-pipeline.md。
 
-## L-0017 已通过门禁
+## L-0018 当前中断点
 
-- 专项：normalized fields 7；persisted 2；故障恢复 true；duplicate writes 0；Secret rejection true；真实外呼 0；
-- `npm run verify`：PASS；repository security 158；API 167；tenant isolation 18；frontend self-test 44；Bundle Budget PASS；
-- `npm run audit:dependencies`：0 vulnerabilities；
-- `npm run test:e2e`：37/37；
-- Evidence：`docs/engineering/evidence/L-0017-lead-ingestion-pipeline.md`。
+### Test-first 检查点包含
 
-## 当前执行：L-0018
+- backend/src/connectors/file-lead-ingestion-connector-test.ts
+- backend/package.json：新增 test:connector:file-leads，并接入 backend test
+- packages/workbook-security/package.json
+- packages/workbook-security/src/index.js
+- packages/workbook-security/src/index.d.ts
+- docs/engineering/adr/ADR-0017-csv-excel-lead-connector.md
+- docs/engineering/evidence/L-0018-csv-excel-lead-connector.md
+- docs/engineering/FEATURES.json：关联 ADR-0017 与 L-0018 Evidence
 
-目标：把 CSV、XLSX、XLS 作为统一 Connector Contract 的首个生产化数据入口。
+### Test-first 证据
 
-1. ADR 与 Evidence 先登记；
-2. Test-first 锁定格式兼容、版本化映射、文件/批次/行血缘、幂等、部分失败和检查点恢复；
-3. 复用现有 workbook 安全解析，拒绝 Prototype Pollution、超限文件/行列和危险输入；
-4. 只使用本地固定样本和 Mock Sink，真实外呼保持 0；
-5. 完成后独立 Commit，再进入 L-0019。
+执行 npm run test:connector:file-leads --workspace backend 按预期失败：
+
+- ERR_MODULE_NOT_FOUND
+- 缺少 package：@goodjob/workbook-security
+
+这是真实的 Red 阶段证据。禁止删除测试、跳过测试或放宽断言。共享 package 已创建骨架，但尚未加入 root workspaces、前后端依赖和 package-lock，因此仍不可解析。
+
+### 尚未完成
+
+1. 将 packages/workbook-security 加入根 workspaces；
+2. frontend/backend 声明 @goodjob/workbook-security workspace 依赖，xlsx 仅由共享 package 持有；
+3. 更新 package-lock，并调整 dependency-policy 门禁验证共享依赖、xlsx 0.20.3 官方来源和完整性；
+4. 将 frontend/src/workbook.ts 的安全读取逻辑改为复用共享 package，保持现有浏览器 API 与 Bundle Budget；
+5. 实现 backend/src/connectors/file-lead-ingestion-connector.ts；
+6. 让专项测试覆盖 CSV/XLSX/XLS、版本化映射、文件/批次/工作表/行血缘、多页 cursor、故障恢复、同文件重跑、reject_batch、skip_invalid、危险表头、Secret 表头、公式、限制和签名伪造；
+7. 专项通过后运行 workbook security、dependency policy、backend build、verify、audit、E2E；
+8. 更新 Evidence、FEATURES、TRACEABILITY、PROJECT_STATUS、IMPLEMENTATION_LOG、RISK_REGISTER、DEVELOPMENT_PLAN；
+9. L-0018 完整验收后再独立 Commit 和只推 GitHub，然后进入 L-0019。
+
+## 继续开发的推荐顺序
+
+1. 先检查 git status 和本交接文档，不清理当前未提交文件；
+2. 完成 workspace/package-lock 接线；
+3. 运行专项测试，逐项修复真实实现；
+4. 检查前端工作簿安全测试没有回归；
+5. 通过全量门禁后收口 L-0018；
+6. 继续 L-0019、L-0020、L-0021。
+
+## 剩余阶段
+
+- L-0018：进行中，尚未完成；
+- L-0019：公开网页/搜索安全 Connector；
+- L-0020：第三方 API Mock Provider/插件边界；
+- L-0021：阶段 3 全量验收与回顾。
 
 ## 持续风险与暂停条件
 
-- R-015 保持 Mitigating：真实来源样本与供应商验收尚未完成；
-- R-004/R-005/R-008/R-011/R-012/R-013/R-014 继续按登记状态跟踪；
-- GitHub Actions、历史 Secret Scan、分支保护和部署凭证轮换尚未闭环；
-- 仅在需要真实凭证、确定供应商、不可逆业务决策或生产操作时暂停并请求用户确认。
+- R-015 保持 Mitigating；当前共享包与 Connector 未验收；
+- R-006 网页采集合规、SSRF、内容隔离仍留待 L-0019；
+- R-013 真实供应商凭证和部署验证未开始；
+- 只有需要真实凭证、供应商选择、不可逆业务决策或生产操作时才暂停请求用户确认。
