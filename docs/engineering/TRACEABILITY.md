@@ -1,4 +1,4 @@
-﻿# 需求追踪矩阵
+# 需求追踪矩阵
 
 更新时间：2026-07-15
 
@@ -23,6 +23,7 @@ OBJ → REQ/NFR → ADR/DESIGN → TASK → PR/COMMIT → TEST → BUILD → REL
 | REQ-GJ-ARCH-001 | ADR-0005/0006/0007/0008；风险 R-004/R-005/R-006/R-011/R-012/R-013；L-0004~L-0009 证据 | TASK-GJ-0003 | Commit `4e25f1d` + `ff90350` + `3e5c5b3` + `dde131a` + `9160a90` + `59594d1`；分支 `codex/phase-1-route-modularization` | 九组独立路由/Gateway/Connector 测试；来源血缘；邮件/模型 Gateway；LeadSourceConnector；外联幂等；转化回滚；API 167；tenant isolation 18；`verify`；audit 0；E2E 37/37 | In progress |
 | REQ-GJ-ARCH-002 | ADR-0012；风险 R-005/R-011；L-0013 证据 | TASK-GJ-0007 | Commit `a70359b`；分支 `codex/phase-1-route-modularization` | Memory/MySQL 同契约；21 条按行 SQL；commit 2/rollback 2；外联路由全量快照写 0；API 167；tenant 18；`verify`；audit 0；E2E 37/37 | Done |
 | REQ-GJ-FE-001 | ADR-0009；风险 R-004/R-008；L-0010 证据 | TASK-GJ-0005 | Commit `487438b`；分支 `codex/phase-1-route-modularization` | 来源选择状态 8 组；4 个 API 客户端契约；self-test 41；API 167；tenant isolation 18；`verify`；audit 0；E2E 37/37 | Done |
+| REQ-GJ-FE-PERF-001 | ADR-0014；风险 R-004/R-008；L-0015 证据 | TASK-GJ-0008 | Commit `1509f64`；分支 `codex/phase-1-route-modularization` | entry 1.90 kB；prototype 389.65 kB；workbook/XLSX/ECharts/ZRender lazy；self-test 44；API 167；tenant 18；`verify`；audit 0；E2E 37/37 | Done |
 | REQ-GJ-AI-ORCH-001 | ADR-0010；风险 R-006/R-012/R-014；L-0011 证据 | TASK-GJ-0102 | Commit `356200a`；分支 `codex/phase-1-route-modularization` | 8 个工作流运行；暂停/恢复；确认/驳回/重跑；并发防重；权限复检；Secret 不入 checkpoint；Mock 外呼 0；API 167；tenant 18；`verify`；audit 0；E2E 37/37 | Done |
 | REQ-GJ-SEC-003 | ADR-0011；风险 R-012/R-013；L-0012 证据 | TASK-GJ-0006 | Commit `a3e2dcc`；分支 `codex/phase-1-route-modularization` | Vault 加密/上下文/篡改/迁移/轮换/吊销/掩码；API 167；tenant 18；`verify`；audit 0；E2E 37/37 | Done |
 | REQ-GJ-AI-PERSIST-001 | ADR-0013；风险 R-014；L-0014 证据 | TASK-GJ-0103 | Commit `9ab50b1`；分支 `codex/phase-1-route-modularization` | 6 表；跨实例恢复；并发 Effect 唯一；决策冲突失败关闭；权限复检；Secret 拒绝；API 167；tenant 18；`verify`；audit 0；E2E 37/37 | Done |

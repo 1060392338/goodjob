@@ -1,4 +1,4 @@
-﻿# 会话交接
+# 会话交接
 
 更新时间：2026-07-15
 
@@ -7,54 +7,55 @@
 - 仓库：`C:\Users\Administrator\Documents\Codex\2026-07-13\hi\GoodJob`
 - 分支：`codex/phase-1-route-modularization`
 - GitHub：`https://github.com/1060392338/goodjob.git`
-- 当前完成 Commit：`9ab50b1`（L-0014 实现）
-- 当前 Loop：L-0015
+- 当前完成 Commit：`1509f64`（L-0015 实现）
+- 当前 Loop：L-0016
 - 禁止推送 Gitee `origin`。
 
-## L-0014 已完成内容
+## L-0015 已完成内容
 
-1. 登记 `REQ-GJ-AI-PERSIST-001 / TASK-GJ-0103` 与 ADR-0013。
-2. 建立符合 LangGraph `BaseCheckpointSaver` 的 MySQL Checkpointer。
-3. 新增 run/checkpoint/write/approval/effect/audit 六张表。
-4. 第二个 Engine 实例可恢复暂停工作流；重复 start 不重复调用模型。
-5. actor/tenant 恢复校验和业务 Effect 前权限复检保持有效。
-6. 同一 run/attempt 唯一决策；同决策可重放，不同决策抛 `decision_conflict`。
-7. Effect 使用稳定键、状态、结果回读和过期租约恢复；下游继续以相同 key 防重。
-8. 所有持久化面写前递归拒绝 Secret；SQL 参数化，无全表 DELETE/TRUNCATE/快照替换。
-9. 实现 Commit：`9ab50b1`；证据：`docs/engineering/evidence/L-0014-ai-workflow-mysql-persistence.md`。
+1. 登记 `REQ-GJ-FE-PERF-001 / TASK-GJ-0008` 与 ADR-0014。
+2. 保留静态原型业务基线，以 `bootstrap.ts` 建立 1.90 kB 轻量入口。
+3. `prototype-api` 成为 389.65 kB 动态核心包。
+4. 工作簿/XLSX 与 Dashboard/ECharts/ZRender 分别按需加载并使用稳定 chunk。
+5. Bundle Budget 检查 manifest、入口/核心大小、动态边界、初始依赖图与 modulepreload。
+6. self-test 从 41 墠至 44，验证 bootstrap 和三个动态导入边界。
+7. 首次 E2E 发现工作簿包装递归，修复后专项 2/2、全量 37/37。
+8. 实现 Commit：`1509f64`；证据：`docs/engineering/evidence/L-0015-frontend-progressive-code-splitting.md`。
 
 ## 已通过门禁
 
 ```text
-npm run test:workflow:persistence --workspace backend  PASS
-npm run test:workflow:ai --workspace backend           PASS
+npm run test:bundle-budget --workspace frontend       PASS
+entry / prototype                                     1.90 / 389.65 kB
+workbook / XLSX lazy                                   3.54 / 492.35 kB
+dashboard / ECharts / ZRender lazy                    2.78 / 321.17 / 184.17 kB
+frontend self-test / lead source                      44 / 8 states + 4 APIs
+npm run test:workbook-security --workspace frontend   PASS
 npm run verify                                         PASS
-npm run test:e2e                                       PASS，37/37（3.5 分钟）
+npm run test:e2e                                       PASS，37/37（3.4 分钟）
 npm run audit:dependencies                             PASS，0
-API operations                                         167
-tenant isolation                                       18
+API operations / tenant isolation                      167 / 18
 真实模型/MySQL/外部平台调用                            0
 ```
 
-## 当前下一步：L-0015
+## 当前下一步：L-0016
 
-目标：前端模块化、动态导入、路由分包和主包性能门禁。
+目标：阶段 2 全量验收、追踪审计、风险复核和回顾。
 
 执行顺序：
 
-1. 记录当前 bundle 文件、raw/gzip 大小和模块组成基线；
-2. Test-first 建立 bundle budget/路由 chunk 验收脚本；
-3. 按现有路由或页面注册方式引入 `React.lazy`/动态 import；
-4. 将工作簿、演示导出等重依赖移出首屏路径；
-5. 增加稳定 manual chunks，避免 vendor 与业务全部回到单主包；
-6. 运行 frontend self-test/build、完整 verify、37 条 E2E、audit；
-7. 更新 REQ/TASK/ADR/风险/证据/回滚并提交。
+1. 双向核对 REQ/TASK/ADR/Commit/Test/Evidence；
+2. 核对 `FEATURES.json`、状态、计划、风险、日志和代码事实；
+3. 重跑完整 verify、audit 和 E2E；
+4. 输出阶段 2 验收证据与回顾，明确 Done/Deferred；
+5. 独立文档提交并只推送 GitHub。
 
 ## 持续风险
 
-- R-005：其他旧领域仍可能使用 `persistAll`，L-0013 只完成线索外联切片。
-- R-008：当前前端主包约 1,394.14 kB / gzip 444.16 kB，L-0015 处理。
+- R-004：`server.ts`、`prototype-api.ts` 和 384 kB 静态 HTML 仍过大。
+- R-005：其他旧领域仍使用 `persistAll`，全 Store Repository 未完成。
+- R-008：重依赖已拆离，但页面控制器和真实网络性能未完成。
 - R-011：邮件 pending 运维处置界面未完成。
 - R-012/R-013：SecretVault 真实部署、备份恢复和托管验证未完成。
-- R-014：MySQL 契约已完成，但真实 MySQL 迁移、锁等待、断连和备份恢复演练仍需后续验证。
+- R-014：真实 MySQL 迁移、锁等待、断连和备份恢复演练未完成。
 - GitHub Actions、历史 Secret Scan、分支保护和部署凭证轮换尚未闭环。

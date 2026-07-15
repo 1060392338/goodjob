@@ -1,4 +1,4 @@
-﻿# 风险登记册
+# 风险登记册
 
 更新时间：2026-07-15
 
@@ -11,7 +11,7 @@
 | R-005 | MySQL Store 具有原型阶段全量持久化特征，扩展性与数据竞争风险高 | High | Mitigating | L-0013 已将线索外联请求及完成事务迁入 Repository/Unit of Work，并将 `lead_outreach_requests` 移出快照替换；其他领域仍使用 `persistAll`，需逐域迁移和真实 MySQL 恢复演练 | 阶段 2 |
 | R-006 | AI/网页采集可能造成敏感数据泄漏、提示注入或不合规采集 | Critical | Open | L-0008/L-0009 已完成模型和线索来源调用的 SSRF 拒绝、密钥脱敏与统一边界；仍需来源白名单、采集许可、恶意内容隔离、Prompt 注入防护、审计和人工确认 | 阶段 1/3/4 |
 | R-007 | WhatsApp/Twilio/Puppeteer 等依赖安装包含大型浏览器下载，影响 CI 可重复性 | Medium | Open | CI 跳过非必要 Puppeteer 下载；WhatsApp 独立可选运行时 | 阶段 2 |
-| R-008 | 前端主包约 1.394 MB，首屏和维护性存在风险 | Medium | Open | L-0010 只做结构拆分，生产构建仍约 1.394 MB；后续建立性能基线并按模块动态拆包，工作簿能力评估按需加载 | 阶段 2/7 |
+| R-008 | 前端静态 HTML、核心原型和重依赖体积影响首屏与维护性 | Medium | Mitigating | L-0015/ADR-0014 已将 1,394.14 kB 单包拆为 1.90 kB 入口、389.65 kB 核心及按需 XLSX/ECharts/ZRender，并建立 manifest/依赖图/modulepreload Bundle Budget；384 kB HTML、页面控制器和真实网络性能仍需后续处理 | 阶段 2/7 |
 | R-009 | GitHub 远端、质量门禁与保护规则未完全闭环 | High | Mitigating | 已建立 `github` 远端并推送 master/开发分支；待完成 Actions 实跑、历史 Secret Scan、分支保护与部署凭证确认 | 阶段 0 |
 | R-010 | npm Registry 的 `xlsx@0.18.5` 存在 Prototype Pollution 与 ReDoS High 漏洞 | High | Closed | 已升级到 SheetJS 官方 `0.20.3`、锁定完整性、集中安全解析并增加恶意输入/兼容测试；依赖审计为 0 | 阶段 0 |
 | R-011 | SMTP 超时或发送成功后最终持久化失败会留下结果不确定的 `pending` 外联请求，人工使用新键仍可能造成重复邮件 | High | Open | 发送前持久化 pending；相同键返回 409 且不自动重发；保存外部消息 ID；后续增加运维查询、人工确认、受控重试和告警 | 阶段 2/7 |

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-15",
   "project": "GoodJob AI 外贸获客跟踪系统",
-  "currentIteration": "L-0015",
+  "currentIteration": "L-0016",
   "allowedStatuses": [
     "backlog",
     "ready",
@@ -261,7 +261,7 @@
       "task": "TASK-GJ-0008",
       "title": "渐进式前端动态分包与 Bundle Budget",
       "phase": 2,
-      "status": "in_progress",
+      "status": "done",
       "priority": "P1",
       "acceptance": [
         "生产入口 JavaScript 不超过 20 KiB，并动态加载现有原型业务",
@@ -280,7 +280,16 @@
       ],
       "evidence": [
         "docs/engineering/evidence/L-0015-frontend-progressive-code-splitting.md"
-      ]
+      ],
+      "completedAt": "2026-07-15",
+      "verification": {
+        "build": "PASS: entry 1.90 kB; prototype 389.65 kB; workbook 3.54 kB; XLSX/ECharts/ZRender lazy chunks; heavy modulepreload 0",
+        "tests": "PASS: bundle budget; frontend self-test 44; lead source 8 states/4 APIs; workbook security; verify; API 167; tenant 18; audit 0; Playwright 37/37",
+        "limitation": "384 kB static HTML and page-controller decomposition remain under R-004/R-008",
+        "evidence": [
+          "docs/engineering/evidence/L-0015-frontend-progressive-code-splitting.md"
+        ]
+      }
     },
     {
       "id": "REQ-GJ-AI-PERSIST-001",

@@ -592,3 +592,42 @@
 - 证据：`docs/engineering/evidence/L-0014-ai-workflow-mysql-persistence.md`。
 - R-014 保持 Mitigating，真实 MySQL 演练留待后续。
 - 下一循环 L-0015：前端模块化、动态导入、路由分包和 bundle budget。
+
+## 2026-07-15 — Loop L-0015：前端渐进式动态分包与 Bundle Budget
+
+### Discover / Register
+
+- 登记 `REQ-GJ-FE-PERF-001 / TASK-GJ-0008`，关联 R-004/R-008 与 ADR-0014。
+- 确认正式入口为 384.03 kB 静态 `index.html` + `prototype-api.ts`，不是未使用的 React `main.tsx`。
+- 基线构建：单个 JavaScript 包 1,394.14 kB / gzip 444.16 kB，无 manifest、动态 import 或性能预算。
+
+### Test-first
+
+- 新增 Bundle Budget 后首次运行按预期失败：报告 1,394.14 kB 单包及 manifest/懒加载边界缺失。
+- 实现后 self-test 首次因入口契约改变失败；补充 bootstrap 与动态导入断言，41→44。
+- 首次完整 E2E 35/37，工作簿导出暴露包装函数递归；修正后失败用例 2/2、全量 37/37。
+- 未删除测试、跳过门禁、提高 warning 阈值或放宽业务断言。
+
+### Implement
+
+- 新增 `bootstrap.ts` 动态加载正式原型。
+- 工作簿能力按操作加载，失败后允许重试。
+- Dashboard 图表迁入懒加载模块，增加过期渲染保护和统一释放。
+- XLSX、ECharts、ZRender 使用稳定独立 chunk；Vite 输出 manifest。
+- frontend build 自动执行 Bundle Budget。
+
+### Verify
+
+- 构建：entry 1.90 kB；prototype 389.65 kB；workbook 3.54 kB；XLSX 492.35 kB；dashboard 2.78 kB；ECharts 321.17 kB；ZRender 184.17 kB。
+- `npm run test:bundle-budget --workspace frontend`：PASS。
+- frontend self-test 44；来源 8 states/4 APIs；workbook security PASS。
+- `npm run verify`：PASS；API 167；tenant isolation 18。
+- `npm run audit:dependencies`：PASS，0 vulnerabilities。
+- `npm run test:e2e`：PASS，37/37（3.4 分钟）。
+
+### Record / Next
+
+- 实现 Commit：`1509f64`。
+- 证据：`docs/engineering/evidence/L-0015-frontend-progressive-code-splitting.md`。
+- R-008 调整为 Mitigating；不把 384 kB HTML 或页面控制器拆分混报完成。
+- 下一循环 L-0016：阶段 2 全量验收、追踪审计、风险复核和回顾。
