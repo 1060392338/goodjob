@@ -15,6 +15,7 @@
 - 当前 Loop：`L-0022`（阶段 4 AI 线索清洗/补全/去重/ICP 评分，Ready）
 - 当前 REQ/TASK：`REQ-GJ-AI-LEAD-001 / TASK-GJ-0301`
 - 阶段 3 Test-first 收口 Commit：`789a0e4`
+- 阶段 3 验收实现 Commit：`4e5b5b0`
 - 阶段 3 Evidence：`docs/engineering/evidence/L-0021-phase-3-acceptance.md`
 - 阶段 3 ADR：`docs/engineering/adr/ADR-0020-phase-3-machine-verifiable-acceptance.md`
 

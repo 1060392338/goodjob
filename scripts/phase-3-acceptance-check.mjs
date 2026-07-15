@@ -70,6 +70,7 @@ for (const loop of ["L-0017", "L-0018", "L-0019", "L-0020", "L-0021"]) {
   const increment = lead?.increments?.find((item) => item.loop === loop);
   if (!increment) fail(`${loop} increment missing`);
   else if (increment.status !== "done") fail(`${loop} expected done, received ${increment.status}`);
+  else if (!increment.deliveryCommit) fail(`${loop} missing deliveryCommit`);
 }
 for (const design of lead?.design || []) if (!exists(design)) fail(`phase 3 design missing: ${design}`);
 for (const evidence of lead?.evidence || []) if (!exists(evidence)) fail(`phase 3 evidence missing: ${evidence}`);

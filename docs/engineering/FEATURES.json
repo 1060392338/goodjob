@@ -540,6 +540,7 @@
           "loop": "L-0021",
           "status": "done",
           "testCommit": "789a0e4",
+          "deliveryCommit": "4e5b5b0",
           "verification": "PASS: phase 3 machine acceptance; unified Pipeline + file/web/API connector suites; verify; audit 0; E2E 37/37; duplicate writes 0; credential leaks 0; real outbound calls 0; external validation explicitly Deferred"
         }
       ],

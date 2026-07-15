@@ -5,6 +5,7 @@
 - ADR：ADR-0020
 - 基线 Commit：`d708e80`
 - Test-first Commit：`789a0e4`
+- 阶段验收实现 Commit：`4e5b5b0`
 - 状态：Done
 - 验收结论：Accepted with explicit deferred external validation
 
